@@ -7,7 +7,7 @@ output "cluster_name" {
 }
 
 output "cluster_ca" {
-  value = aws_eks_cluster.eks.certificate_authority[0].data
+  value     = aws_eks_cluster.eks.certificate_authority[0].data
   sensitive = true
 }
 
