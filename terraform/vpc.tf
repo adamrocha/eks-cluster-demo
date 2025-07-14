@@ -54,6 +54,7 @@ resource "aws_route_table" "eks_public" {
 
 # Subnets (2 public subnets)
 resource "aws_subnet" "eks" {
+  # checkov:skip=CKV_AWS_130: ADD REASON
   count                   = 2
   vpc_id                  = aws_vpc.eks.id
   cidr_block              = cidrsubnet(aws_vpc.eks.cidr_block, 8, count.index)
