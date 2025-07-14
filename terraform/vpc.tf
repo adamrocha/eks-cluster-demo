@@ -60,21 +60,21 @@ resource "aws_route_table_association" "eks_public" {
 resource "aws_default_security_group" "restrict_default" {
   vpc_id = aws_vpc.eks.id
 
-  ingress {
-    self        = true
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = []
-  }
+  # ingress {
+  #   self        = true
+  #   from_port   = 0
+  #   to_port     = 0
+  #   protocol    = "-1" # All protocols
+  #   cidr_blocks = []
+  # }
 
-  egress {
-    self        = true
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # egress {
+  #   self        = true
+  #   from_port   = 0
+  #   to_port     = 0
+  #   protocol    = "-1"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 
   tags = {
     Name = "eks-default-sg"
