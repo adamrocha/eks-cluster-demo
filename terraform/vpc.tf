@@ -1,6 +1,8 @@
 # Get available AZs
 data "aws_availability_zones" "available" {}
 
+data "aws_caller_identity" "current" {}
+
 # VPC
 resource "aws_vpc" "eks" {
   cidr_block           = "10.0.0.0/16"
@@ -10,6 +12,21 @@ resource "aws_vpc" "eks" {
   tags = {
     Name = "eks-vpc"
   }
+}
+
+resource "aws_cloudwatch_log_group" "vpc_flow_log" {
+  name              = "/aws/vpc/flow-log/eks"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
+}
+
+resource "aws_flow_log" "eks" {
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_log.arn
+  log_destination_type = "cloud-watch-logs"
+  traffic_type         = "ALL"
+  vpc_id               = aws_vpc.eks.id
+
+  iam_role_arn = aws_iam_role.vpc_flow_log.arn
 }
 
 # Internet Gateway
