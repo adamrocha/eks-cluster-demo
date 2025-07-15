@@ -23,7 +23,7 @@ resource "aws_eks_node_group" "node_group" {
     min_size     = 1
   }
 
-  instance_types = ["t3.medium"]
+  instance_types = ["t3.small"]
   capacity_type  = "ON_DEMAND"
 
   depends_on = [
@@ -31,4 +31,8 @@ resource "aws_eks_node_group" "node_group" {
     aws_iam_role_policy_attachment.eks_worker_AmazonEKS_CNI_Policy,
     aws_iam_role_policy_attachment.eks_worker_AmazonEC2ContainerRegistryReadOnly
   ]
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
 }

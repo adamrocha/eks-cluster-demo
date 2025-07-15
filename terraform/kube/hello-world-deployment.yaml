@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+  namespace: hello-world-ns
+  labels:
+    app: hello-world
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "Hello World Deployment"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  minReadySeconds: 5
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: hello-world
+        image: hashicorp/http-echo:0.2.3
+        imagePullPolicy: Always
+        args: ["-text=Hello, world!"]
+        ports:
+        - containerPort: 5678
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5678
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5678
+          initialDelaySeconds: 5
+          periodSeconds: 5
