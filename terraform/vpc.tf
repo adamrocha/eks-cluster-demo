@@ -1,8 +1,6 @@
 # Get available AZs
 data "aws_availability_zones" "available" {}
 
-data "aws_caller_identity" "current" {}
-
 # VPC
 resource "aws_vpc" "eks" {
   cidr_block           = "10.0.0.0/16"
