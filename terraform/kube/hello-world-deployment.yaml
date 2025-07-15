@@ -26,33 +26,33 @@ spec:
         runAsUser: 1000
         fsGroup: 2000
       containers:
-      - name: hello-world
-        image: hashicorp/http-echo:0.2.3
-        imagePullPolicy: Always
-        args: ["-text=Hello, world!"]
-        ports:
-        - containerPort: 5678
-        resources:
-          limits:
-            cpu: "250m"
-            memory: "128Mi"
-          requests:
-            cpu: "100m"
-            memory: "64Mi"
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop: ["ALL"]
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 5678
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5678
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: hello-world
+          image: hashicorp/http-echo:0.2.3
+          imagePullPolicy: Always
+          args: ["-text=Hello, world!"]
+          ports:
+            - containerPort: 5678
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 5
+            periodSeconds: 5
