@@ -43,3 +43,8 @@ resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEC2ContainerRegistry
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = aws_iam_role.eks_nodes.name
 }
+
+resource "aws_iam_role_policy_attachment" "eks_worker_node_policy_amazon_ssm_managed_instance_core" {
+  role       = aws_iam_role.eks_nodes.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
