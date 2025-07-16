@@ -138,8 +138,8 @@ resource "aws_iam_policy" "s3_replication_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          aws_s3_bucket.tf_state_replica.arn,        # Destination bucket ARN (assuming you have one, adjust as needed)
-          "${aws_s3_bucket.tf_state_replica.arn}/*", # Objects in destination bucket
+          aws_s3_bucket.project_bucket_replica.arn,        # Destination bucket ARN (assuming you have one, adjust as needed)
+          "${aws_s3_bucket.project_bucket_replica.arn}/*", # Objects in destination bucket
         ]
       },
     ]
@@ -194,8 +194,8 @@ resource "aws_iam_role_policy" "ec2_ssm_s3_inline" {
           "s3:ListBucket"
         ],
         Resource = [
-          "arn:aws:s3:::project-bucket-1337-2727",
-          "arn:aws:s3:::project-bucket-1337-2727/*"
+          "arn:aws:s3:::project-bucket-2727",
+          "arn:aws:s3:::project-bucket-2727/*"
         ]
       },
       {
