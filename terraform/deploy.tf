@@ -1,5 +1,8 @@
 resource "kubernetes_namespace" "hello_world_ns" {
-  depends_on = [aws_eks_node_group.node_group]
+  # depends_on = [
+  #   aws_eks_node_group.node_group,
+  #   aws_eks_cluster.eks
+  # ]
 
   metadata {
     name = "hello-world-ns"
@@ -15,6 +18,9 @@ resource "kubernetes_service" "hello_world" {
   metadata {
     name      = "hello-world-service"
     namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    annotations = {
+      "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
+    }
   }
 
   spec {
@@ -34,7 +40,7 @@ resource "kubernetes_service" "hello_world" {
 }
 
 resource "kubernetes_deployment" "hello_world" {
-  depends_on = [kubernetes_service.hello_world]
+  depends_on = [kubernetes_namespace.hello_world_ns]
 
   metadata {
     name      = "hello-world"

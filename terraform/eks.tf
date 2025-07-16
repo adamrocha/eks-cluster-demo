@@ -1,11 +1,13 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_eks_cluster" "eks" {
+  # checkov:skip=CKV_AWS_38: This is a demo cluster, not production
+  # checkov:skip=CKV_AWS_39: This is a demo cluster, not production
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
-    subnet_ids              = aws_subnet.eks[*].id
+    subnet_ids = aws_subnet.eks[*].id
     # endpoint_public_access  = true
     # endpoint_private_access = true
     # public_access_cidrs     = ["5.182.16.106/32"]
@@ -49,9 +51,9 @@ resource "aws_eks_node_group" "node_group" {
     min_size     = 1
   }
 
-  instance_types = ["t3.micro"]
+  instance_types = ["t3.small"]
   capacity_type  = "ON_DEMAND"
-  disk_size      = 20
+  # disk_size      = 20
   # ami_type       = "AL2_x86_64"
 }
 
