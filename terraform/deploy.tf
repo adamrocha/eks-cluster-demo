@@ -40,6 +40,7 @@ resource "kubernetes_service" "hello_world" {
 }
 
 resource "kubernetes_deployment" "hello_world" {
+  # checkov:skip=CKV_K8S_43: development image, not production
   depends_on = [kubernetes_namespace.hello_world_ns]
 
   metadata {
