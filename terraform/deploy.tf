@@ -1,23 +1,27 @@
 resource "kubernetes_namespace" "hello_world_ns" {
-  # depends_on = [
-  #   aws_eks_node_group.node_group,
-  #   aws_eks_cluster.eks
-  # ]
+  depends_on = [
+    aws_eks_node_group.node_group
+  ]
 
   metadata {
-    name = "hello-world-ns"
+    name = var.namespace
     labels = {
-      name = "hello-world-ns"
+      name = var.namespace
     }
+  }
+
+  lifecycle {
+    prevent_destroy = false
+    # create_before_destroy = true # ensures Terraform can re-create a resource before deletion
   }
 }
 
-resource "kubernetes_service" "hello_world" {
-  depends_on = [kubernetes_namespace.hello_world_ns]
+resource "kubernetes_service" "hello_world_service" {
+  depends_on = []
 
   metadata {
-    name      = "hello-world-service"
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    name      = var.service
+    namespace = var.namespace
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
     }
@@ -25,7 +29,7 @@ resource "kubernetes_service" "hello_world" {
 
   spec {
     selector = {
-      app = "hello-world"
+      app = var.deployment
     }
 
     type = "LoadBalancer"
@@ -40,11 +44,11 @@ resource "kubernetes_service" "hello_world" {
 }
 
 resource "kubernetes_deployment" "hello_world" {
-  depends_on = [kubernetes_namespace.hello_world_ns]
+  # checkov:skip=CKV_K8S_43: development image, not production
 
   metadata {
-    name      = "hello-world"
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    name      = var.deployment
+    namespace = var.namespace
     labels = {
       app = "hello-world"
     }
@@ -69,7 +73,7 @@ resource "kubernetes_deployment" "hello_world" {
     template {
       metadata {
         labels = {
-          app = "hello-world"
+          app = var.deployment
         }
       }
 
@@ -80,7 +84,7 @@ resource "kubernetes_deployment" "hello_world" {
           fs_group        = 2000
         }
         container {
-          name              = "hello-world"
+          name              = var.deployment
           image_pull_policy = "Always"
           image             = "hashicorp/http-echo:0.2.3"
           args              = ["-text=Hello, world!"]

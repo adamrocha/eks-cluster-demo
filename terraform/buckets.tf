@@ -1,29 +1,40 @@
 resource "aws_s3_bucket" "project_bucket" {
-  bucket        = "project-bucket-1337-2727"
+  bucket        = "project-bucket-2727"
   force_destroy = true
   tags = {
-    Name = "project-bucket-1337-2727"
+    Name = "project-bucket-2727"
+  }
+}
+
+resource "aws_s3_bucket" "project_bucket_replica" {
+  bucket        = "project-bucket-2727-replica"
+  force_destroy = true
+  tags = {
+    Name = "project-bucket-2727-replica"
   }
 }
 
 resource "aws_s3_bucket" "tf_state" {
-  bucket        = "terraform-state-bucket-1337-8647"
+  # This bucket is used for storing Terraform state files
+  # checkov:skip=CKV_AWS_144: development bucket, not production
+  # checkov:skip=CKV2_AWS_62: development bucket, not production
+  bucket        = "terraform-state-bucket-2727"
   force_destroy = true
   tags = {
-    Name = "terraform-state-bucket-1337-8647"
-  }
-}
-
-resource "aws_s3_bucket" "tf_state_replica" {
-  bucket        = "terraform-state-bucket-1337-8647-replica"
-  force_destroy = true
-  tags = {
-    Name = "terraform-state-bucket-1337-8647-replica"
+    Name = "terraform-state-bucket-2727"
   }
 }
 
 resource "aws_s3_bucket_public_access_block" "project_bucket_public_access_block" {
   bucket                  = aws_s3_bucket.project_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "project_bucket_replica_public_access_block" {
+  bucket                  = aws_s3_bucket.project_bucket_replica.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -38,16 +49,16 @@ resource "aws_s3_bucket_public_access_block" "tf_state_public_access_block" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_public_access_block" "tf_state_replica_public_access_block" {
-  bucket                  = aws_s3_bucket.tf_state_replica.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 resource "aws_s3_bucket_versioning" "project_bucket_versioning" {
   bucket = aws_s3_bucket.project_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "project_bucket_replica_versioning" {
+  bucket = aws_s3_bucket.project_bucket_replica.id
 
   versioning_configuration {
     status = "Enabled"
@@ -62,13 +73,6 @@ resource "aws_s3_bucket_versioning" "tf_state_versioning" {
   }
 }
 
-resource "aws_s3_bucket_versioning" "tf_state_replica_versioning" {
-  bucket = aws_s3_bucket.tf_state_replica.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "project_bucket_encryption" {
   bucket = aws_s3_bucket.project_bucket.id
@@ -76,6 +80,17 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "project_bucket_en
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.s3_bucket_key.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "project_bucket_replica_encryption" {
+  bucket = aws_s3_bucket.project_bucket_replica.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.s3_bucket_key.arn # Or a different KMS key
       sse_algorithm     = "aws:kms"
     }
   }
@@ -92,19 +107,47 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_encrypti
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_replica_encryption" {
-  bucket = aws_s3_bucket.tf_state_replica.id
+resource "aws_s3_bucket_lifecycle_configuration" "project_bucket_lifecycle" {
+  bucket = aws_s3_bucket.project_bucket.id
 
   rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.s3_bucket_key.arn # Or a different KMS key
-      sse_algorithm     = "aws:kms"
+    id     = "expire-old-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "" # Replicate all objects
+    }
+
+    noncurrent_version_transition {
+      noncurrent_days = 30
+      storage_class   = "STANDARD_IA"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+  }
+
+  rule {
+    id     = "delete-old-objects"
+    status = "Enabled"
+
+    filter {
+      prefix = "" # Replicate all objects
+    }
+
+    expiration {
+      days = 365
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "project_bucket_lifecycle" {
-  bucket = aws_s3_bucket.project_bucket.id
+resource "aws_s3_bucket_lifecycle_configuration" "project_bucket_replica_lifecycle" {
+  bucket = aws_s3_bucket.project_bucket_replica.id
 
   rule {
     id     = "expire-old-versions"
@@ -181,50 +224,20 @@ resource "aws_s3_bucket_lifecycle_configuration" "tf_state_lifecycle" {
   }
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "tf_state_replica_lifecycle" {
-  bucket = aws_s3_bucket.tf_state_replica.id
 
-  rule {
-    id     = "expire-old-versions"
-    status = "Enabled"
-
-    filter {
-      prefix = "" # Replicate all objects
-    }
-
-    noncurrent_version_transition {
-      noncurrent_days = 30
-      storage_class   = "STANDARD_IA"
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 90
-    }
-  }
-
-  rule {
-    id     = "delete-old-objects"
-    status = "Enabled"
-
-    filter {
-      prefix = "" # Replicate all objects
-    }
-
-    expiration {
-      days = 365
-    }
-
-    abort_incomplete_multipart_upload {
-      days_after_initiation = 7
-    }
-  }
-}
 
 resource "aws_s3_bucket_logging" "project_bucket_logging" {
   bucket = aws_s3_bucket.project_bucket.id
 
   target_bucket = aws_s3_bucket.project_bucket.id
   target_prefix = "logs/"
+}
+
+resource "aws_s3_bucket_logging" "project_bucket_replica_logging" {
+  bucket = aws_s3_bucket.project_bucket_replica.id
+
+  target_bucket = aws_s3_bucket.project_bucket_replica.id
+  target_prefix = "replica-logs/"
 }
 
 resource "aws_s3_bucket_logging" "tf_state_logging" {
@@ -234,15 +247,9 @@ resource "aws_s3_bucket_logging" "tf_state_logging" {
   target_prefix = "logs/"
 }
 
-resource "aws_s3_bucket_logging" "tf_state_replica_logging" {
-  bucket = aws_s3_bucket.tf_state_replica.id
 
-  target_bucket = aws_s3_bucket.tf_state.id
-  target_prefix = "replica-logs/"
-}
-
-resource "aws_s3_bucket_notification" "tf_state_replica_notification" {
-  bucket = aws_s3_bucket.tf_state_replica.id
+resource "aws_s3_bucket_notification" "project_bucket_notification" {
+  bucket = aws_s3_bucket.project_bucket.id
 
   # Example: Add a lambda function notification (replace with your actual lambda ARN)
   # lambda_function {
@@ -251,16 +258,26 @@ resource "aws_s3_bucket_notification" "tf_state_replica_notification" {
   # }
 }
 
-resource "aws_s3_bucket_replication_configuration" "tf_state_replication" {
-  bucket = aws_s3_bucket.tf_state.id
+resource "aws_s3_bucket_notification" "project_bucket_replica_notification" {
+  bucket = aws_s3_bucket.project_bucket_replica.id
+
+  # Example: Add a lambda function notification (replace with your actual lambda ARN)
+  # lambda_function {
+  #   lambda_function_arn = aws_lambda_function.example.arn
+  #   events              = ["s3:ObjectCreated:*"]
+  # }
+}
+
+resource "aws_s3_bucket_replication_configuration" "project_bucket_replication" {
+  bucket = aws_s3_bucket.project_bucket.id
   role   = aws_iam_role.s3_replication.arn
 
   depends_on = [
-    aws_s3_bucket.tf_state_replica,
+    aws_s3_bucket.project_bucket_replica,
   ]
 
   rule {
-    id = "tf-state-cross-region-replication"
+    id = "replication-rule"
 
     filter {
       prefix = "" # Replicate all objects
@@ -269,7 +286,7 @@ resource "aws_s3_bucket_replication_configuration" "tf_state_replication" {
     status = "Enabled"
 
     destination {
-      bucket        = aws_s3_bucket.tf_state_replica.arn
+      bucket        = aws_s3_bucket.project_bucket_replica.arn
       storage_class = "STANDARD"
 
       # Ensure this block is consistent with your KMS setup if applicable
