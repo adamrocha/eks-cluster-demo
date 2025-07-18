@@ -3,14 +3,18 @@ data "aws_caller_identity" "current" {}
 resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_38: This is a demo cluster, not production
   # checkov:skip=CKV_AWS_39: This is a demo cluster, not production
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy
+  ]
+
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
-    subnet_ids = aws_subnet.eks[*].id
-    # endpoint_public_access  = true
-    # endpoint_private_access = true
-    # public_access_cidrs     = ["5.182.16.106/32"]
+    subnet_ids              = aws_subnet.eks[*].id
+    endpoint_public_access  = true
+    endpoint_private_access = true
+    # public_access_cidrs     = []
   }
 
   enabled_cluster_log_types = [
@@ -27,10 +31,6 @@ resource "aws_eks_cluster" "eks" {
       key_arn = aws_kms_key.eks_secrets.arn
     }
   }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy
-  ]
 }
 
 resource "aws_eks_node_group" "node_group" {
@@ -40,6 +40,7 @@ resource "aws_eks_node_group" "node_group" {
     aws_iam_role_policy_attachment.eks_worker_AmazonEKS_CNI_Policy,
     aws_iam_role_policy_attachment.eks_worker_AmazonEC2ContainerRegistryReadOnly
   ]
+
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
   node_role_arn   = aws_iam_role.eks_nodes.arn
