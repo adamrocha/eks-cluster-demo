@@ -33,5 +33,3 @@ variable "deployment" {
   default     = "hello-world"
   type        = string
 }
-
-

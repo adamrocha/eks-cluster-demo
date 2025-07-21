@@ -1,8 +1,11 @@
 data "aws_caller_identity" "current" {}
 
+data "external" "my_ip" {
+  program = ["bash", "${path.module}./scripts/get_my_ip.sh"]
+}
+
 resource "aws_eks_cluster" "eks" {
-  # checkov:skip=CKV_AWS_38: This is a demo cluster, not production
-  # checkov:skip=CKV_AWS_39: This is a demo cluster, not production
+
   depends_on = [
     aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy
   ]
@@ -14,7 +17,7 @@ resource "aws_eks_cluster" "eks" {
     subnet_ids              = aws_subnet.eks[*].id
     endpoint_public_access  = true
     endpoint_private_access = true
-    # public_access_cidrs     = []
+    public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
   }
 
   enabled_cluster_log_types = [
