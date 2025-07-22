@@ -1,15 +1,14 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
 data "external" "my_ip" {
   program = ["bash", "${path.module}./scripts/get_my_ip.sh"]
 }
 
 resource "aws_eks_cluster" "eks" {
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy
-  ]
-
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
 
@@ -37,13 +36,6 @@ resource "aws_eks_cluster" "eks" {
 }
 
 resource "aws_eks_node_group" "node_group" {
-  depends_on = [
-    aws_eks_cluster.eks,
-    aws_iam_role_policy_attachment.eks_worker_AmazonEKSWorkerNodePolicy,
-    aws_iam_role_policy_attachment.eks_worker_AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.eks_worker_AmazonEC2ContainerRegistryReadOnly
-  ]
-
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
   node_role_arn   = aws_iam_role.eks_nodes.arn
@@ -59,8 +51,4 @@ resource "aws_eks_node_group" "node_group" {
   capacity_type  = "ON_DEMAND"
   # disk_size      = 20
   # ami_type       = "AL2_x86_64"
-}
-
-data "aws_eks_cluster_auth" "eks" {
-  name = aws_eks_cluster.eks.name
 }
