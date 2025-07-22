@@ -1,7 +1,4 @@
 resource "kubernetes_namespace" "hello_world_ns" {
-  depends_on = [
-    aws_eks_node_group.node_group
-  ]
 
   metadata {
     name = "hello-world-ns"
@@ -17,7 +14,6 @@ resource "kubernetes_namespace" "hello_world_ns" {
 }
 
 resource "kubernetes_service" "hello_world_service" {
-  depends_on = []
 
   metadata {
     name      = var.service
