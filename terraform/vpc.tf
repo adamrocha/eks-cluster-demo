@@ -52,7 +52,7 @@ resource "aws_route_table" "eks_public" {
 
 # Subnets (2 public subnets)
 resource "aws_subnet" "eks" {
-  depends_on = [aws_internet_gateway.eks]
+  # depends_on = [aws_internet_gateway.eks]
   # checkov:skip=CKV_AWS_130: Public IP required for EKS
   count                   = 2
   vpc_id                  = aws_vpc.eks.id
