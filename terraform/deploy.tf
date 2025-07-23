@@ -83,7 +83,7 @@ resource "kubernetes_deployment" "hello_world" {
           name              = var.deployment
           image_pull_policy = "Always"
           image             = "hashicorp/http-echo:0.2.3"
-          args              = ["-text=Hello, world!"]
+          args              = ["-text=👋 Hello from Kubernetes!"]
           port {
             container_port = 5678
           }
