@@ -34,13 +34,12 @@ resource "kubernetes_service" "hello_world_service" {
       name        = "http"
       protocol    = "TCP"
       port        = 80
-      target_port = 5678
+      target_port = 8080
     }
   }
 }
 
 resource "kubernetes_deployment" "hello_world" {
-  # checkov:skip=CKV_K8S_43: development image, not production
 
   metadata {
     name      = var.deployment
@@ -77,15 +76,38 @@ resource "kubernetes_deployment" "hello_world" {
         security_context {
           run_as_non_root = true
           run_as_user     = 1000
-          fs_group        = 2000
         }
+
+        volume {
+          name = "nginx-cache"
+          empty_dir {}
+        }
+
+        volume {
+          name = "nginx-run"
+          empty_dir {}
+        }
+
         container {
           name              = var.deployment
           image_pull_policy = "Always"
-          image             = "hashicorp/http-echo:0.2.3"
-          args              = ["-text=👋 Hello from Kubernetes!"]
+          image             = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_name}:${var.image_tag}@${var.image_digest}"
+          # image             = "adamrocha/hello-world-demo:1.2.0"
+          # image             = "hashicorp/http-echo:1.0"
+          # args              = ["-text=👋 Hello from Kubernetes!"]
           port {
-            container_port = 5678
+            container_port = 80
+            protocol       = "TCP"
+          }
+
+          volume_mount {
+            name       = "nginx-cache"
+            mount_path = "/var/cache/nginx"
+          }
+
+          volume_mount {
+            name       = "nginx-run"
+            mount_path = "/var/run"
           }
 
           resources {
@@ -99,6 +121,8 @@ resource "kubernetes_deployment" "hello_world" {
             }
           }
           security_context {
+            run_as_user                = 1000
+            run_as_non_root            = true
             allow_privilege_escalation = false
             read_only_root_filesystem  = true
             capabilities {
@@ -108,7 +132,7 @@ resource "kubernetes_deployment" "hello_world" {
           liveness_probe {
             http_get {
               path = "/"
-              port = 5678
+              port = 8080
             }
             initial_delay_seconds = 10
             period_seconds        = 10
@@ -116,7 +140,7 @@ resource "kubernetes_deployment" "hello_world" {
           readiness_probe {
             http_get {
               path = "/"
-              port = 5678
+              port = 8080
             }
             initial_delay_seconds = 5
             period_seconds        = 5
