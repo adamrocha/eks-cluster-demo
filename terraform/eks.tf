@@ -9,6 +9,7 @@ data "external" "my_ip" {
 }
 
 resource "aws_eks_cluster" "eks" {
+  # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
 
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
