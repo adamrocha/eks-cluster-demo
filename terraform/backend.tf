@@ -1,26 +1,23 @@
-# terraform {
-#   backend "s3" {
-#     bucket       = "terraform-state-bucket-2727"
-#     key          = "envs/dev/terraform.tfstate"
-#     region       = "us-east-1"
-#     use_lockfile = true
-#     encrypt      = true
-#   }
-# }
-
-resource "aws_s3_bucket" "tf_state" {
-  # This bucket is used for storing Terraform state files
-  # checkov:skip=CKV_AWS_144: development bucket, not production
-  # checkov:skip=CKV2_AWS_62: development bucket, not production
-  bucket        = "terraform-state-bucket-2727"
-  force_destroy = true
-  tags = {
-    Name = "terraform-state-bucket-2727"
+terraform {
+  backend "s3" {
+    bucket       = "terraform-state-bucket-2727"
+    key          = "envs/dev/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
+# resource "aws_s3_bucket" "tf_state" {
+#   bucket        = "terraform-state-bucket-2727"
+#   force_destroy = true
+#   tags = {
+#     Name = "terraform-state-bucket-2727"
+#   }
+# }
+
 resource "aws_s3_bucket_public_access_block" "tf_state_public_access_block" {
-  bucket                  = aws_s3_bucket.tf_state.id
+  bucket                  = var.tf_state_bucket
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -28,7 +25,7 @@ resource "aws_s3_bucket_public_access_block" "tf_state_public_access_block" {
 }
 
 resource "aws_s3_bucket_versioning" "tf_state_versioning" {
-  bucket = aws_s3_bucket.tf_state.id
+  bucket = var.tf_state_bucket
 
   versioning_configuration {
     status = "Enabled"
@@ -36,7 +33,7 @@ resource "aws_s3_bucket_versioning" "tf_state_versioning" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_encryption" {
-  bucket = aws_s3_bucket.tf_state.id
+  bucket = var.tf_state_bucket
 
   rule {
     apply_server_side_encryption_by_default {
@@ -47,7 +44,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_encrypti
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "tf_state_lifecycle" {
-  bucket = aws_s3_bucket.tf_state.id
+  bucket = var.tf_state_bucket
 
   rule {
     id     = "expire-old-versions"
@@ -86,8 +83,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "tf_state_lifecycle" {
 }
 
 resource "aws_s3_bucket_logging" "tf_state_logging" {
-  bucket = aws_s3_bucket.tf_state.id
+  bucket = var.tf_state_bucket
 
-  target_bucket = aws_s3_bucket.tf_state.id
+  target_bucket = var.tf_state_bucket
   target_prefix = "logs/"
 }
