@@ -54,7 +54,7 @@ resource "kubernetes_deployment" "hello_world" {
   }
 
   spec {
-    replicas                  = 2
+    replicas                  = 3
     revision_history_limit    = 10
     min_ready_seconds         = 5
     progress_deadline_seconds = 300
@@ -73,9 +73,11 @@ resource "kubernetes_deployment" "hello_world" {
       }
 
       spec {
+        automount_service_account_token = false
+        
         security_context {
           run_as_non_root = true
-          run_as_user     = 1000
+          run_as_user     = 10001
         }
 
         volume {
@@ -121,10 +123,13 @@ resource "kubernetes_deployment" "hello_world" {
             }
           }
           security_context {
-            run_as_user                = 1000
+            run_as_user                = 10001
             run_as_non_root            = true
             allow_privilege_escalation = false
             read_only_root_filesystem  = true
+            seccomp_profile {
+              type = "RuntimeDefault"
+            }
             capabilities {
               drop = ["ALL"]
             }
