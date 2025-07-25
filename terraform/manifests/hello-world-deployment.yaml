@@ -7,7 +7,7 @@ metadata:
     app: hello-world
   annotations:
     deployment.kubernetes.io/revision: "1"
-    description: "Hello World Deployment"
+    description: Hello World Deployment
 spec:
   replicas: 2
   revisionHistoryLimit: 10
@@ -24,35 +24,47 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        fsGroup: 2000
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
       containers:
         - name: hello-world
-          image: hashicorp/http-echo:0.2.3
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.0@652a92910ae9b39bf9f96cdde7496f4b53595976830810ef8125c282a34ad7b8
           imagePullPolicy: Always
-          args: ["-text=Hello, world!"]
           ports:
-            - containerPort: 5678
+            - containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
           resources:
             limits:
-              cpu: "250m"
-              memory: "128Mi"
+              cpu: 250m
+              memory: 128Mi
             requests:
-              cpu: "100m"
-              memory: "64Mi"
+              cpu: 100m
+              memory: 64Mi
           securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - ALL
           livenessProbe:
             httpGet:
               path: /
-              port: 5678
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /
-              port: 5678
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
