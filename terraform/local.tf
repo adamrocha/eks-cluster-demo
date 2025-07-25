@@ -17,6 +17,17 @@ resource "null_resource" "configure_kubectl" {
   }
 }
 
+resource "null_resource" "image_build" {
+  triggers = {
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command     = "../scripts/image.sh"
+    interpreter = ["bash", "-c"]
+  }
+}
+
 # # Null resource to force delete all pods in the namespace
 # resource "null_resource" "force_delete_stuck_pods" {
 #   depends_on = []
