@@ -64,3 +64,9 @@ variable "image_digest" {
   type        = string
 
 }
+
+variable "tf_state_bucket" {
+  description = "S3 bucket for Terraform state"
+  default     = "terraform-state-bucket-2727"
+  type        = string
+}
