@@ -43,12 +43,17 @@ resource "aws_eks_node_group" "node_group" {
 
   scaling_config {
     desired_size = 2
-    max_size     = 3
+    max_size     = 4
     min_size     = 1
   }
 
-  instance_types = ["t3.micro"]
+  # instance_types = ["t3.small"]
+  # capacity_type  = "ON_DEMAND"
+  # disk_size      = 20
+  # ami_type       = "AL2023_x86_64_STANDARD"
+
+  instance_types = ["t4g.micro"]
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
-  ami_type       = "AL2023_x86_64_STANDARD"
+  ami_type       = "AL2023_ARM_64_STANDARD"
 }
