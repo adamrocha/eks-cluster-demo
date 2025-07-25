@@ -33,3 +33,34 @@ variable "deployment" {
   default     = "hello-world"
   type        = string
 }
+
+variable "aws_account_id" {
+  description = "AWS Account ID"
+  default     = "802645170184"
+  type        = string
+}
+
+variable "instance_type" {
+  description = "EC2 instance type for the EKS node group"
+  default     = "t3.small"
+  type        = string
+}
+
+variable "repo_name" {
+  description = "ECR repository name"
+  default     = "hello-world-demo"
+  type        = string
+}
+
+variable "image_tag" {
+  description = "Docker image tag"
+  default     = "1.2.0"
+  type        = string
+}
+
+variable "image_digest" {
+  description = "Digest of the Docker image to be used in the deployment"
+  default     = "sha256:652a92910ae9b39bf9f96cdde7496f4b53595976830810ef8125c282a34ad7b8"
+  type        = string
+
+}
