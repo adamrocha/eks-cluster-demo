@@ -74,7 +74,7 @@ resource "kubernetes_deployment" "hello_world" {
 
       spec {
         automount_service_account_token = false
-        
+
         security_context {
           run_as_non_root = true
           run_as_user     = 10001
