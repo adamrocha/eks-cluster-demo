@@ -9,7 +9,7 @@ metadata:
     deployment.kubernetes.io/revision: "1"
     description: Hello World Deployment
 spec:
-  replicas: 2
+  replicas: 3
   revisionHistoryLimit: 10
   minReadySeconds: 5
   progressDeadlineSeconds: 300
@@ -21,9 +21,10 @@ spec:
       labels:
         app: hello-world
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 10001
       volumes:
         - name: nginx-cache
           emptyDir: {}
@@ -31,7 +32,7 @@ spec:
           emptyDir: {}
       containers:
         - name: hello-world
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.0@652a92910ae9b39bf9f96cdde7496f4b53595976830810ef8125c282a34ad7b8
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.0@sha256:7d29cd1195c0cb64d67f9aa7ed0fd3de723026566679a9354fbadbb19e2450bd
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -49,10 +50,12 @@ spec:
               cpu: 100m
               memory: 64Mi
           securityContext:
-            runAsUser: 1000
+            runAsUser: 10001
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
             capabilities:
               drop:
                 - ALL

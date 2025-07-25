@@ -9,6 +9,8 @@ data "external" "my_ip" {
 }
 
 resource "aws_eks_cluster" "eks" {
+  # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
+
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
 
@@ -42,9 +44,9 @@ resource "aws_eks_node_group" "node_group" {
   subnet_ids      = aws_subnet.eks[*].id
 
   scaling_config {
-    desired_size = 2
-    max_size     = 4
-    min_size     = 1
+    desired_size = 4
+    min_size     = 2
+    max_size     = 6
   }
 
   # instance_types = ["t3.small"]
