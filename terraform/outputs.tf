@@ -24,7 +24,7 @@ output "hello_world_service_endpoint" {
   value       = "http://${kubernetes_service.hello_world_service.status[0].load_balancer[0].ingress[0].hostname}"
 }
 
-output "ecrimage" {
+output "ecr_image" {
   description = "Docker image to be used in the deployment"
   value       = kubernetes_deployment.hello_world.spec[0].template[0].spec[0].container[0].image
 }
