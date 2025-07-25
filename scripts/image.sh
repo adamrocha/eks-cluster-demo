@@ -15,36 +15,40 @@ cd ../kube/ || exit 1
 
 ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}"
 
-echo "🛠️ Building local image: ${LOCAL_IMAGE_NAME}:${IMAGE_TAG}"
-docker build \
-  --platform ${PLATFORM_ARCH} \
-  --tag ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} \
-  --push .
-
-echo "🔗 Tagging image for ECR: ${ECR_URI}"
-docker tag ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} ${ECR_URI}
-
-echo "🔐 Logging in to Amazon ECR..."
+echo "🔐 Authenticating Docker to Amazon ECR..."
 aws ecr get-login-password \
-  --region ${AWS_REGION} \
+  --region "${AWS_REGION}" \
   | docker login \
   --username AWS \
-  --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+  --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-echo "📦 Checking if ECR repo exists: ${REPO_NAME}"
+echo "🔍 Checking if ECR repository '${REPO_NAME}' exists..."
 if ! aws ecr describe-repositories \
   --repository-names "${REPO_NAME}" \
-  --region ${AWS_REGION} >/dev/null 2>&1
-then
+  --region "${AWS_REGION}" >/dev/null 2>&1; then
   echo "📁 Repository not found. Creating ECR repository: ${REPO_NAME}"
   aws ecr create-repository \
-    --repository-name "${REPO_NAME}" \
-    --region ${AWS_REGION}
+  --repository-name "${REPO_NAME}" \
+  --region "${AWS_REGION}" >/dev/null
 else
-  echo "✅ Repository already exists."
+  echo "✅ Repository '${REPO_NAME}' already exists."
 fi
 
-echo "📤 Pushing image to ECR: ${ECR_URI}"
-docker push ${ECR_URI}
+echo "🔍 Checking if image '${IMAGE_TAG}' exists in '${REPO_NAME}'..."
+IMAGE_EXISTS=$(aws ecr describe-images \
+  --repository-name "${REPO_NAME}" \
+  --region "${AWS_REGION}" \
+  --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" \
+  --output json)
 
-echo "✅ Done! Image pushed to ${ECR_URI}"
+if [[ "${IMAGE_EXISTS}" == "[]" ]]; then
+  echo "🚫 Image with tag '${IMAGE_TAG}' not found. Building and pushing..."
+  docker build \
+  --platform ${PLATFORM_ARCH} \
+  -t ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} .
+  docker tag ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} ${ECR_URI}
+  docker push ${ECR_URI}
+  echo "✅ Image pushed to: ${ECR_URI}"
+else
+  echo "✅ Image '${IMAGE_TAG}' already exists in '${REPO_NAME}'. No action needed."
+fi
