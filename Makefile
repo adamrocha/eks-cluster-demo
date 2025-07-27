@@ -6,7 +6,9 @@ TF_DIR=terraform
 
 default: check-aws init-bucket
 
-tf-run: terraform-format terraform-init terraform-validate terraform-plan
+tf-run: tf-format tf-init tf-validate tf-plan
+	@echo "✅ Terraform tasks completed successfully."
+	@echo "🚀 To apply changes, run 'make tf-apply'."
 	@echo "🔄 Running Terraform tasks..."
 
 check-aws:
