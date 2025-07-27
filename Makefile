@@ -58,6 +58,16 @@ tf-destroy:
 	cd $(TF_DIR) && terraform destroy
 	@echo "✅ Terraform resources destroyed."
 
+tf-output:
+	cd $(TF_DIR) && terraform output
+	@echo "✅ Terraform outputs displayed."
+	@echo "🔍 To view specific output, run 'terraform output <output_name>'."
+
+tf-delete-ecr-repo:
+	@echo "⚠️  Deleting ECR repository: hello-world-demo"
+	@aws ecr delete-repository --repository-name hello-world-demo --region $(AWS_REGION) --force
+	@echo "✅ ECR repository 'hello-world-demo' deleted."
+
 clean: check-aws
 	@echo "⚠️  WARNING: This will delete the S3 bucket: $(S3_BUCKET)"
 	@read -p "Are you sure? (y/N): " confirm; \
