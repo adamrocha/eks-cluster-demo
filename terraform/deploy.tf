@@ -114,12 +114,12 @@ resource "kubernetes_deployment" "hello_world" {
 
           resources {
             limits = {
-              cpu    = "250m"
-              memory = "128Mi"
-            }
-            requests = {
               cpu    = "100m"
               memory = "64Mi"
+            }
+            requests = {
+              cpu    = "50m"
+              memory = "32Mi"
             }
           }
           security_context {
