@@ -32,7 +32,7 @@ spec:
           emptyDir: {}
       containers:
         - name: hello-world
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.0@sha256:7d29cd1195c0cb64d67f9aa7ed0fd3de723026566679a9354fbadbb19e2450bd
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.1@sha256:4282cb9a2f11afbc058a0cbdaf906831630e974aa8da9c0c89d9ffcb127fc4e5
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -44,11 +44,11 @@ spec:
               mountPath: /var/run
           resources:
             limits:
-              cpu: 250m
-              memory: 128Mi
-            requests:
               cpu: 100m
               memory: 64Mi
+            requests:
+              cpu: 50m
+              memory: 32Mi
           securityContext:
             runAsUser: 10001
             runAsNonRoot: true
