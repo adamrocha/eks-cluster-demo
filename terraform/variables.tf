@@ -42,7 +42,7 @@ variable "aws_account_id" {
 
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
-  default     = "t3.small"
+  default     = "t4g.micro"
   type        = string
 }
 
@@ -54,13 +54,13 @@ variable "repo_name" {
 
 variable "image_tag" {
   description = "Docker image tag"
-  default     = "1.2.0"
+  default     = "1.2.2"
   type        = string
 }
 
 variable "image_digest" {
   description = "Digest of the Docker image to be used in the deployment"
-  default     = "sha256:819eb6ffcd649e3bb25198f211955256b03cfd55f07976e270cd204c814a3eef"
+  default     = "sha256:4282cb9a2f11afbc058a0cbdaf906831630e974aa8da9c0c89d9ffcb127fc4e5"
   type        = string
 
 }

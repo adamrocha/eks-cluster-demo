@@ -54,7 +54,7 @@ resource "aws_eks_node_group" "node_group" {
   # disk_size      = 20
   # ami_type       = "AL2023_x86_64_STANDARD"
 
-  instance_types = ["t4g.micro"]
+  instance_types = [var.instance_type]
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
   ami_type       = "AL2023_ARM_64_STANDARD"

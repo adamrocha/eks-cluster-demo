@@ -6,8 +6,8 @@
 AWS_REGION="us-east-1"
 AWS_ACCOUNT_ID="802645170184"
 REPO_NAME="hello-world-demo"
-IMAGE_TAG="1.2.0"
-LOCAL_IMAGE_NAME="hello-world"
+IMAGE_TAG="1.2.2"
+LOCAL_IMAGE_NAME="hello-world-demo"
 PLATFORM_ARCH="linux/arm64"
 # ---------------------------------
 
