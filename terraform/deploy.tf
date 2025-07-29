@@ -59,6 +59,15 @@ resource "kubernetes_deployment" "hello_world" {
     min_ready_seconds         = 5
     progress_deadline_seconds = 300
 
+    strategy {
+      type = "RollingUpdate"
+
+      rolling_update {
+        max_surge       = "25%"
+        max_unavailable = "25%"
+      }
+    }
+
     selector {
       match_labels = {
         app = var.deployment
