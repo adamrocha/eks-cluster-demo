@@ -1,3 +1,4 @@
+export AWS_PAGER :=
 S3_BUCKET=terraform-state-bucket-2727
 AWS_REGION=us-east-1
 TF_DIR=terraform
