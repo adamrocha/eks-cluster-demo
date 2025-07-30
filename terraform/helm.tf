@@ -1,48 +1,54 @@
-# resource "helm_release" "prometheus" {
-#   name             = "prometheus"
-#   repository       = "https://prometheus-community.github.io/helm-charts"
-#   chart            = "prometheus"
-#   namespace        = "monitoring"
-#   create_namespace = true
+resource "helm_release" "cloudwatch_exporter" {
+    depends_on       = [aws_eks_cluster.eks]
+    name             = "prometheus-cloudwatch-exporter"
+    repository       = "https://prometheus-community.github.io/helm-charts"
+    chart            = "prometheus-cloudwatch-exporter"
+    namespace        = "monitoring"
+    create_namespace = true
+    timeout          = 600
 
-#   set {
-#     name  = "server.service.type"
-#     value = "LoadBalancer"
-#   }
-# }
+    set {
+        name  = "service.type"
+        value = "ClusterIP"
+    }
 
-# resource "helm_release" "grafana" {
-#   name             = "grafana"
-#   repository       = "https://grafana.github.io/helm-charts"
-#   chart            = "grafana"
-#   namespace        = "monitoring"
-#   create_namespace = true
+    set {
+        name  = "aws.region"
+        value = var.region
+    }
+}
 
-#   set {
-#     name  = "service.type"
-#     value = "LoadBalancer"
-#   }
+resource "helm_release" "kube_state_metrics" {
+  depends_on       = [aws_eks_cluster.eks]
+  name             = "kube-state-metrics"
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  chart            = "kube-state-metrics"
+  namespace        = "monitoring"
+  create_namespace = true
+  timeout          = 600  
 
-#   set {
-#     name  = "adminPassword"
-#     value = "admin123"
-#   }
-# }
+  set {
+    name  = "service.type"
+    value = "LoadBalancer"
+  }
+}
 
-# resource "helm_release" "jenkins" {
-#   name             = "jenkins"
-#   repository       = "https://charts.jenkins.io"
-#   chart            = "jenkins"
-#   namespace        = "jenkins"
-#   create_namespace = true
+resource "helm_release" "prometheus" {
+  depends_on       = [aws_eks_cluster.eks]
+  name             = "prometheus"
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  chart            = "kube-prometheus-stack"
+  namespace        = "monitoring"
+  create_namespace = true
+  timeout          = 600
 
-#   set {
-#     name  = "controller.serviceType"
-#     value = "LoadBalancer"
-#   }
+  set {
+    name  = "prometheus.service.type"
+    value = "LoadBalancer"
+  }
 
-#   set {
-#     name  = "controller.adminPassword"
-#     value = "jenkins123"
-#   }
-# }
+  set {
+    name  = "grafana.service.type"
+    value = "LoadBalancer"
+  }
+}
