@@ -1,7 +1,7 @@
-output "cluster_endpoint" {
-  description = "Endpoint of the EKS cluster"
-  value       = aws_eks_cluster.eks.endpoint
-}
+# output "cluster_endpoint" {
+#   description = "Endpoint of the EKS cluster"
+#   value       = aws_eks_cluster.eks.endpoint
+# }
 
 # output "cluster_name" {
 #   description = "Name of the EKS cluster"
@@ -24,7 +24,7 @@ output "hello_world_service_endpoint" {
   value       = "http://${kubernetes_service.hello_world_service.status[0].load_balancer[0].ingress[0].hostname}"
 }
 
-output "ecr_image" {
-  description = "Docker image to be used in the deployment"
-  value       = kubernetes_deployment.hello_world.spec[0].template[0].spec[0].container[0].image
-}
+# output "ecr_image" {
+#   description = "Docker image to be used in the deployment"
+#   value       = kubernetes_deployment.hello_world.spec[0].template[0].spec[0].container[0].image
+# }
