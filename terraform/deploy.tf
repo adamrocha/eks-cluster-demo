@@ -1,9 +1,9 @@
 resource "kubernetes_namespace" "hello_world_ns" {
 
   metadata {
-    name = "hello-world-ns"
+    name = var.namespace
     labels = {
-      name = "hello-world-ns"
+      name = var.namespace
     }
   }
 
@@ -14,10 +14,11 @@ resource "kubernetes_namespace" "hello_world_ns" {
 }
 
 resource "kubernetes_service" "hello_world_service" {
+  depends_on = [kubernetes_namespace.hello_world_ns]
 
   metadata {
     name      = var.service
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    namespace = var.namespace
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
     }
@@ -40,10 +41,11 @@ resource "kubernetes_service" "hello_world_service" {
 }
 
 resource "kubernetes_deployment" "hello_world" {
+  depends_on = [kubernetes_namespace.hello_world_ns]
 
   metadata {
     name      = var.deployment
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    namespace = var.namespace
     labels = {
       app = var.deployment
     }
