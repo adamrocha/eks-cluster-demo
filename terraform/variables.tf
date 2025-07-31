@@ -42,7 +42,7 @@ variable "aws_account_id" {
 
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
-  default     = "t4g.medium"
+  default     = "t4g.small"
   type        = string
 }
 
