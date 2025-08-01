@@ -34,13 +34,13 @@
 # }
 
 resource "helm_release" "prometheus" {
-  depends_on       = [aws_eks_node_group.node_group]
   name             = "prometheus"
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
-  namespace        = "monitoring"
+  namespace        = var.monitoring_ns
   create_namespace = true
   timeout          = 600
+  wait             = true
 
   set {
     name  = "prometheus.service.type"
@@ -48,7 +48,49 @@ resource "helm_release" "prometheus" {
   }
 
   set {
+    name  = "prometheus.service.loadBalancerClass"
+    value = "service.k8s.aws/nlb"
+  }
+
+  set {
     name  = "grafana.service.type"
     value = "LoadBalancer"
   }
+
+  set {
+    name  = "grafana.service.loadBalancerClass"
+    value = "service.k8s.aws/nlb"
+  }
+
+  set {
+    name  = "prometheus.service.externalTrafficPolicy"
+    value = "Local"
+  }
+
+  set {
+    name  = "grafana.service.externalTrafficPolicy"
+    value = "Local"
+  }
 }
+
+#   set {
+#     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.k8s-app"
+#     value = "kube-state-metrics"
+#   }
+#   set {
+#     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.release"
+#     value = "kube-state-metrics"
+#   }
+#   set {
+#     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.app"
+#     value = "kube-state-metrics"
+#   }
+#   set {
+#     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.name"
+#     value = "kube-state-metrics"
+#   }
+#   set {
+#     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.k8s-app"
+#     value = "prometheus-cloudwatch-exporter"
+#   }
+# }
