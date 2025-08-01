@@ -23,7 +23,7 @@ resource "null_resource" "image_build" {
   }
 
   provisioner "local-exec" {
-    command     = "${path.module}./scripts/image.sh"
+    command     = "../scripts/image.sh"
     interpreter = ["bash", "-c"]
   }
 }
