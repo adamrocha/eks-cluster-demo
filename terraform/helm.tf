@@ -48,8 +48,8 @@ resource "helm_release" "prometheus" {
   }
 
   set {
-    name  = "prometheus.service.loadBalancerClass"
-    value = "service.k8s.aws/nlb"
+    name  = "prometheus.service.loadBalancerType"
+    value = "nlb"
   }
 
   set {
@@ -58,20 +58,20 @@ resource "helm_release" "prometheus" {
   }
 
   set {
-    name  = "grafana.service.loadBalancerClass"
-    value = "service.k8s.aws/nlb"
-  }
-
-  set {
-    name  = "prometheus.service.externalTrafficPolicy"
-    value = "Local"
-  }
-
-  set {
-    name  = "grafana.service.externalTrafficPolicy"
-    value = "Local"
+    name  = "grafana.service.loadBalancerType"
+    value = "nlb"
   }
 }
+#   set {
+#     name  = "prometheus.service.externalTrafficPolicy"
+#     value = "Local"
+#   }
+
+#   set {
+#     name  = "grafana.service.externalTrafficPolicy"
+#     value = "Local"
+#   }
+# }
 
 #   set {
 #     name  = "prometheus.prometheusSpec.serviceMonitorSelector.matchLabels.k8s-app"
