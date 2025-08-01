@@ -16,9 +16,15 @@ variable "node_group_name" {
   type        = string
 }
 
-variable "namespace" {
+variable "hello_world_ns" {
   description = "Name of the Kubernetes namespace"
   default     = "hello-world-ns"
+  type        = string
+}
+
+variable "monitoring_ns" {
+  description = "Name of the Kubernetes namespace"
+  default     = "monitoring-ns"
   type        = string
 }
 
