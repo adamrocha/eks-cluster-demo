@@ -24,6 +24,28 @@
 #   value       = "http://${kubernetes_service.hello_world_service.status[0].load_balancer[0].ingress[0].hostname}"
 # }
 
+# data "kubernetes_service" "grafana" {
+#   metadata {
+#     name      = "prometheus-grafana"
+#     namespace = var.monitoring_ns
+#   }
+# }
+# output "grafana_service_endpoint" {
+#   description = "External endpoint of the Grafana LoadBalancer service"
+#   value       = "http://${data.kubernetes_service.grafana.status[0].load_balancer[0].ingress[0].hostname}"
+# }
+
+# data "kubernetes_service" "prometheus" {
+#   metadata {
+#     name      = "prometheus-kube-prometheus-prometheus"
+#     namespace = var.monitoring_ns
+#   }
+# }
+# output "prometheus_service_endpoint" {
+#   description = "External endpoint of the Prometheus LoadBalancer service"
+#   value       = "http://${data.kubernetes_service.prometheus.status[0].load_balancer[0].ingress[0].hostname}:9090"
+# }
+
 # output "ecr_image" {
 #   description = "Docker image to be used in the deployment"
 #   value       = kubernetes_deployment.hello_world.spec[0].template[0].spec[0].container[0].image
