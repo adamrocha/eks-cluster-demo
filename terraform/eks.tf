@@ -7,17 +7,17 @@ data "aws_eks_cluster_auth" "eks" {
 }
 
 data "external" "my_ip" {
-  program = ["bash", "${path.module}./scripts/get_my_ip.sh"]
+  program = ["bash", "../scripts/get_my_ip.sh"]
 }
 
 resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
-
-  name     = var.cluster_name
-  role_arn = aws_iam_role.eks_cluster.arn
+  depends_on = [aws_vpc.eks]
+  name       = var.cluster_name
+  role_arn   = aws_iam_role.eks_cluster.arn
 
   vpc_config {
-    subnet_ids              = aws_subnet.eks[*].id
+    subnet_ids              = aws_subnet.public[*].id
     endpoint_public_access  = true
     endpoint_private_access = true
     public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
@@ -40,13 +40,14 @@ resource "aws_eks_cluster" "eks" {
 }
 
 resource "aws_eks_node_group" "node_group" {
+  depends_on      = [aws_eks_cluster.eks]
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
   node_role_arn   = aws_iam_role.eks_nodes.arn
-  subnet_ids      = aws_subnet.eks[*].id
+  subnet_ids      = aws_subnet.public[*].id
 
   scaling_config {
-    desired_size = 4
+    desired_size = 3
     min_size     = 2
     max_size     = 6
   }

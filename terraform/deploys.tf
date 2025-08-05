@@ -1,9 +1,10 @@
 resource "kubernetes_namespace" "hello_world_ns" {
+  depends_on = [aws_eks_node_group.node_group]
 
   metadata {
-    name = var.namespace
+    name = var.hello_world_ns
     labels = {
-      name = var.namespace
+      name = var.hello_world_ns
     }
   }
 
@@ -14,13 +15,15 @@ resource "kubernetes_namespace" "hello_world_ns" {
 }
 
 resource "kubernetes_service" "hello_world_service" {
-  depends_on = [kubernetes_namespace.hello_world_ns]
+  depends_on = [aws_eks_node_group.node_group]
 
   metadata {
     name      = var.service
-    namespace = var.namespace
+    namespace = var.hello_world_ns
     annotations = {
-      "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
+      "service.beta.kubernetes.io/aws-load-balancer-type"        = "nlb"
+      "service.beta.kubernetes.io/aws-load-balancer-scheme"      = "internet-facing"
+      "service.beta.kubernetes.io/aws-load-balancer-target-type" = "ip"
     }
   }
 
@@ -45,7 +48,7 @@ resource "kubernetes_deployment" "hello_world" {
 
   metadata {
     name      = var.deployment
-    namespace = var.namespace
+    namespace = var.hello_world_ns
     labels = {
       app = var.deployment
     }

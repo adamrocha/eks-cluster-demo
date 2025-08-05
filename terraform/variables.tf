@@ -16,9 +16,15 @@ variable "node_group_name" {
   type        = string
 }
 
-variable "namespace" {
+variable "hello_world_ns" {
   description = "Name of the Kubernetes namespace"
   default     = "hello-world-ns"
+  type        = string
+}
+
+variable "monitoring_ns" {
+  description = "Name of the Kubernetes namespace"
+  default     = "monitoring-ns"
   type        = string
 }
 
@@ -42,7 +48,7 @@ variable "aws_account_id" {
 
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
-  default     = "t4g.medium"
+  default     = "t4g.small"
   type        = string
 }
 

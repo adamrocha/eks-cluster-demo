@@ -23,7 +23,32 @@ resource "null_resource" "image_build" {
   }
 
   provisioner "local-exec" {
-    command     = "${path.module}./scripts/image.sh"
+    command     = "../scripts/image.sh"
     interpreter = ["bash", "-c"]
   }
 }
+
+resource "null_resource" "pre_destroy_cleanup" {
+  depends_on = [
+    helm_release.prometheus,
+    aws_eks_node_group.node_group,
+    aws_internet_gateway.eks,
+    aws_nat_gateway.nat,
+    aws_route_table.private,
+    aws_route_table.public,
+    aws_subnet.private,
+    aws_subnet.public,
+    aws_vpc.eks
+  ]
+  provisioner "local-exec" {
+    when        = destroy
+    command     = "../scripts/delete_services.sh monitoring-ns"
+    interpreter = ["bash", "-c"]
+  }
+
+  triggers = {
+    always_run = timestamp()
+  }
+}
+
+
