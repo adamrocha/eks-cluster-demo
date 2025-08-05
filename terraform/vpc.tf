@@ -35,7 +35,6 @@ resource "aws_internet_gateway" "eks" {
   }
 }
 
-
 # Subnets (2 public subnets)
 # resource "aws_subnet" "eks" {
 #   depends_on = [aws_internet_gateway.eks]
@@ -56,7 +55,6 @@ resource "aws_internet_gateway" "eks" {
 
 resource "aws_subnet" "public" {
   # checkov:skip=CKV_AWS_130: Public IP required for EKS
-  depends_on              = [aws_internet_gateway.eks]
   count                   = 2
   vpc_id                  = aws_vpc.eks.id
   cidr_block              = cidrsubnet(aws_vpc.eks.cidr_block, 8, count.index)
@@ -71,7 +69,6 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_subnet" "private" {
-  depends_on              = [aws_internet_gateway.eks]
   count                   = 2
   vpc_id                  = aws_vpc.eks.id
   cidr_block              = cidrsubnet(aws_vpc.eks.cidr_block, 8, count.index + 10)
@@ -124,7 +121,6 @@ resource "aws_route_table" "public" {
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat[0].id
   subnet_id     = aws_subnet.public[0].id
-  depends_on    = [aws_internet_gateway.eks]
 
   tags = {
     Name = "nat-gateway"
