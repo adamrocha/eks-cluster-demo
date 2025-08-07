@@ -28,7 +28,7 @@ resource "null_resource" "image_build" {
   }
 }
 
-resource "null_resource" "pre_destroy_cleanup" {
+resource "null_resource" "cleanup_lb" {
   depends_on = [
     helm_release.prometheus,
     aws_eks_node_group.node_group,
@@ -42,7 +42,7 @@ resource "null_resource" "pre_destroy_cleanup" {
   ]
   provisioner "local-exec" {
     when        = destroy
-    command     = "../scripts/delete_services.sh monitoring-ns"
+    command     = "../scripts/cleanup_lb.sh monitoring-ns"
     interpreter = ["bash", "-c"]
   }
 
@@ -51,4 +51,15 @@ resource "null_resource" "pre_destroy_cleanup" {
   }
 }
 
+resource "null_resource" "cleanup_sg" {
+  depends_on = []
+  provisioner "local-exec" {
+    when        = destroy
+    command     = "../scripts/cleanup_sg.sh"
+    interpreter = ["bash", "-c"]
+  }
 
+  triggers = {
+    always_run = timestamp()
+  }
+}
