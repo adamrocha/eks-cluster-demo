@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # === CONFIGURE THIS ===
-GPG_ID="adamrocha13@gmail.com"         # <-- CHANGE THIS to your GPG key ID or email
+GPG_ID="<GPG key ID or email>"         # <-- CHANGE THIS to your GPG key ID or email
 AWS_PROFILE_NAME="prom_infradmin"      # <-- CHANGE THIS to your desired AWS profile name
 
 # === PRECHECKS ===
