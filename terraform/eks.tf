@@ -14,7 +14,7 @@ resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
     aws_vpc.eks,
-    null_resource.cleanup_sg
+    # null_resource.cleanup_sg
   ]
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
