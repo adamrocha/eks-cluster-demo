@@ -1,11 +1,7 @@
 resource "null_resource" "configure_kubectl" {
   depends_on = [aws_eks_cluster.eks]
 
-  triggers = {
-    cluster_name = aws_eks_cluster.eks.id
-    # endpoint     = aws_eks_cluster.eks.endpoint
-    # master_auth  = sha1(jsonencode(aws_eks_cluster.eks.identity[0].oidc[0].issuer))
-  }
+  triggers = {cluster_name = aws_eks_cluster.eks.id}
 
   provisioner "local-exec" {
     command     = <<EOF
@@ -28,38 +24,38 @@ resource "null_resource" "image_build" {
   }
 }
 
-resource "null_resource" "cleanup_lb" {
-  depends_on = [
-    helm_release.prometheus,
-    aws_eks_node_group.node_group,
-    aws_internet_gateway.eks,
-    aws_nat_gateway.nat,
-    aws_route_table.private,
-    aws_route_table.public,
-    aws_subnet.private,
-    aws_subnet.public,
-    aws_vpc.eks
-  ]
-  provisioner "local-exec" {
-    when        = destroy
-    command     = "../scripts/cleanup_lb.sh monitoring-ns"
-    interpreter = ["bash", "-c"]
-  }
+# resource "null_resource" "cleanup_lb" {
+#   depends_on = [
+#     helm_release.prometheus,
+#     aws_eks_node_group.node_group,
+#     aws_internet_gateway.eks,
+#     aws_nat_gateway.nat,
+#     aws_route_table.private,
+#     aws_route_table.public,
+#     aws_subnet.private,
+#     aws_subnet.public,
+#     aws_vpc.eks
+#   ]
+#   provisioner "local-exec" {
+#     when        = destroy
+#     command     = "../scripts/cleanup_lb.sh monitoring-ns"
+#     interpreter = ["bash", "-c"]
+#   }
 
-  triggers = {
-    always_run = timestamp()
-  }
-}
+#   triggers = {
+#     always_run = timestamp()
+#   }
+# }
 
-resource "null_resource" "cleanup_sg" {
-  depends_on = []
-  provisioner "local-exec" {
-    when        = destroy
-    command     = "../scripts/cleanup_sg.sh"
-    interpreter = ["bash", "-c"]
-  }
+# resource "null_resource" "cleanup_sg" {
+#   depends_on = []
+#   provisioner "local-exec" {
+#     when        = destroy
+#     command     = "../scripts/cleanup_sg.sh"
+#     interpreter = ["bash", "-c"]
+#   }
 
-  triggers = {
-    always_run = timestamp()
-  }
-}
+#   triggers = {
+#     always_run = timestamp()
+#   }
+# }

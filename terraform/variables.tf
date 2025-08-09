@@ -28,6 +28,12 @@ variable "monitoring_ns" {
   type        = string
 }
 
+variable "vault_ns" {
+  description = "Name of the Kubernetes namespace"
+  default     = "vault-ns"
+  type        = string
+}
+
 variable "service" {
   description = "Name of the Kubernetes service"
   default     = "hello-world-service"
