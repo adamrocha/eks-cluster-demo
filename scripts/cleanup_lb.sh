@@ -7,9 +7,9 @@ NAMESPACE=$1
 REGION="us-east-1"
 VPC_NAME="eks-vpc"
 
-echo "⚠️ Cleaning up Kubernetes services in namespace '$NAMESPACE'..."
-kubectl patch svc prometheus-prometheus -n "$NAMESPACE" -p '{"metadata":{"finalizers":null}}' --type=merge || true
-kubectl patch svc prometheus-grafana -n "$NAMESPACE" -p '{"metadata":{"finalizers":null}}' --type=merge || true
+echo "⚠️ Cleaning up Kubernetes services..."
+# kubectl patch svc prometheus-prometheus -n "$NAMESPACE" -p '{"metadata":{"finalizers":null}}' --type=merge || true
+# kubectl patch svc prometheus-grafana -n "$NAMESPACE" -p '{"metadata":{"finalizers":null}}' --type=merge || true
 kubectl patch svc hello-world-service -n hello-world-ns -p '{"metadata":{"finalizers":null}}' --type=merge || true
 # kubectl delete svc --all -n "$NAMESPACE" --ignore-not-found || true
 
@@ -17,7 +17,7 @@ echo "⏱️ Sleeping for 10 seconds to ensure services are deleted..."
 sleep 10
 
 echo "🧨 Deleting Prometheus Helm release..."
-helm uninstall prometheus -n "$NAMESPACE" || true
+helm uninstall prometheus -n monitoring-ns || true
 
 echo "🔍 Locating VPC with tag Name=$VPC_NAME in region $REGION..."
 VPC_ID=$(aws ec2 describe-vpcs \

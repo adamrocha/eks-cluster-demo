@@ -205,7 +205,8 @@ resource "null_resource" "vault_retrieve_kubeconfig" {
       fi
 
       echo "Stopping port-forward..."
-      kill $PF_PID
+      kill $PF_PID || true
+      pkill -f 'kubectl port-forward svc/vault -n vault-ns 8200:8200' || true
     EOT
   }
 }
