@@ -1,15 +1,87 @@
 resource "helm_release" "vault" {
+  depends_on = [
+    aws_eks_node_group.node_group,
+    aws_internet_gateway.eks,
+    aws_nat_gateway.nat,
+    aws_route_table.private,
+    aws_route_table.public,
+    aws_subnet.private,
+    aws_subnet.public,
+    aws_vpc.eks
+  ]
   name       = "vault"
   namespace  = "vault-ns"
   repository = "https://helm.releases.hashicorp.com"
   chart      = "vault"
   version    = "0.28.0"
+  timeout    = 600
 
   create_namespace = true
 
   set {
     name  = "server.dev.enabled"
     value = "true"
+  }
+  set {
+    name  = "server.ui"
+    value = "true"
+  }
+
+  set {
+    name  = "server.ha.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "server.ha.replicas"
+    value = "3"
+  }
+
+  set {
+    name  = "server.ha.storage.type"
+    value = "consul"
+  }
+
+  set {
+    name  = "server.ha.storage.consul.address"
+    value = "consul:8500"
+  }
+
+  set {
+    name  = "server.ha.storage.consul.path"
+    value = "vault/"
+  }
+
+  set {
+    name  = "injector.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "injector.replicaCount"
+    value = "1"
+  }
+
+  set {
+    name  = "injector.authPath"
+    value = "auth/kubernetes"
+  }
+
+  set {
+    name  = "injector.logLevel"
+    value = "info"
+  }
+}
+
+
+resource "null_resource" "wait_for_vault" {
+  depends_on = [helm_release.vault]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "Waiting for Vault to be ready..."
+      kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault-ns --timeout=180s
+    EOT
   }
 }
 
@@ -28,70 +100,112 @@ resource "null_resource" "vault_port_forward" {
   }
 }
 
+resource "null_resource" "vault_init" {
+  depends_on = [null_resource.wait_for_vault]
 
-# resource "null_resource" "wait_for_vault" {
-#   depends_on = [helm_release.vault]
+  provisioner "local-exec" {
+    command = <<EOT
+      set -euo pipefail
 
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       echo "Waiting for Vault to be ready..."
-#       kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault --timeout=180s
-#     EOT
-#   }
-# }
+      echo "Checking Vault initialization status..."
+      IS_INIT=$(kubectl exec -n vault-ns vault-0 -- vault status -format=json | jq -r '.initialized')
 
-# resource "null_resource" "vault_init" {
-#   depends_on = [null_resource.wait_for_vault]
+      if [ "$IS_INIT" = "true" ]; then
+        echo "Vault is already initialized, skipping init"
+      else
+        echo "Initializing Vault..."
+        kubectl exec -n vault-ns vault-0 -- vault operator init -key-shares=1 -key-threshold=1 > ~/vault_init.txt
 
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       kubectl exec -n vault-ns vault-0 -- vault operator init -key-shares=1 -key-threshold=1 \
-#       > vault_init.txt
-#       VAULT_UNSEAL_KEY=$(grep 'Unseal Key 1:' vault_init.txt | awk '{print $4}')
-#       VAULT_ROOT_TOKEN=$(grep 'Initial Root Token:' vault_init.txt | awk '{print $4}')
-#       kubectl exec -n vault-ns vault-0 -- vault operator unseal $VAULT_UNSEAL_KEY
-#       echo $VAULT_ROOT_TOKEN > ~/.vault-token
-#     EOT
-#   }
-# }
+        VAULT_UNSEAL_KEY=$(grep 'Unseal Key 1:' vault_init.txt | awk '{print $4}')
+        VAULT_ROOT_TOKEN=$(grep 'Initial Root Token:' vault_init.txt | awk '{print $4}')
 
-# resource "null_resource" "vault_store_kubeconfig" {
-#   depends_on = [null_resource.vault_init]
+        echo "Unsealing Vault..."
+        kubectl exec -n vault-ns vault-0 -- vault operator unseal "$VAULT_UNSEAL_KEY"
 
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       export VAULT_ADDR=http://$(kubectl get svc vault -n vault-ns -o jsonpath='{.spec.clusterIP}'):8200
-#       export VAULT_ROOT_TOKEN=$(cat ~/.vault-token)
-#       aws eks update-kubeconfig --name ${aws_eks_cluster.eks.name} --region ${var.region} --dry-run \
-#         | vault kv put secret/kubeconfig value=-
-#     EOT
-#   }
-# }
+        echo "$VAULT_ROOT_TOKEN" > ~/.vault-token
+      fi
+    EOT
+  }
+}
 
-# resource "null_resource" "vault_retrieve_kubeconfig" {
-#   depends_on = [null_resource.vault_store_kubeconfig]
+resource "null_resource" "vault_store_kubeconfig" {
+  depends_on = [null_resource.vault_init]
 
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       echo "Starting Vault port-forward for retrieval..."
-#       kubectl port-forward svc/vault -n vault-ns 8200:8200 >/tmp/vault-pf.log 2>&1 &
-#       PF_PID=$!
+  provisioner "local-exec" {
+    command = <<EOT
+      set -euo pipefail
 
-#       # Wait for the port to be ready
-#       for i in {1..10}; do
-#         nc -z localhost 8200 && break
-#         sleep 2
-#       done
+      echo "Starting Vault port-forward for storing kubeconfig..."
+      kubectl port-forward svc/vault -n vault-ns 8200:8200 >/tmp/vault-pf.log 2>&1 &
+      PF_PID=$!
 
-#       export VAULT_ADDR=http://127.0.0.1:8200
-#       export VAULT_ROOT_TOKEN=$(cat ~/.vault-token)
+      # Wait for Vault port to be ready (increase retries if needed)
+      for i in {1..15}; do
+        nc -z localhost 8200 && break
+        sleep 2
+      done
 
-#       echo "Retrieving kubeconfig from Vault..."
-#       vault kv get -field=value secret/kubeconfig > ~/.kube/config
+      export VAULT_ADDR='http://127.0.0.1:8200'
+      export VAULT_TOKEN=$(cat ~/.vault-token)
 
-#       echo "Stopping port-forward..."
-#       kill $PF_PID
-#     EOT
-#   }
-# }
+      echo "Backing up current kubeconfig to ~/.kube/config.bak"
+      mkdir -p ~/.kube
+      if [ -f ~/.kube/config ]; then
+        cp ~/.kube/config ~/.kube/config.bak
+      fi
 
+      echo "Generating fresh kubeconfig with aws CLI"
+      aws eks update-kubeconfig --name ${aws_eks_cluster.eks.name} --region ${var.region}
+
+      echo "Storing kubeconfig in Vault..."
+      cat ~/.kube/config | vault kv put secret/kubeconfig value=-
+
+      echo "Stopping port-forward..."
+      kill $PF_PID
+    EOT
+  }
+}
+
+resource "null_resource" "vault_retrieve_kubeconfig" {
+  depends_on = [null_resource.vault_store_kubeconfig]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      set -euo pipefail
+
+      echo "Starting Vault port-forward for retrieving kubeconfig..."
+      kubectl port-forward svc/vault -n vault-ns 8200:8200 >/tmp/vault-pf.log 2>&1 &
+      PF_PID=$!
+
+      for i in {1..15}; do
+        nc -z localhost 8200 && break
+        sleep 2
+      done
+
+      export VAULT_ADDR='http://127.0.0.1:8200'
+      export VAULT_TOKEN=$(cat ~/.vault-token)
+
+      echo "Backing up existing kubeconfig to ~/.kube/config.bak"
+      mkdir -p ~/.kube
+      if [ -f ~/.kube/config ]; then
+        cp ~/.kube/config ~/.kube/config.bak
+      fi
+
+      echo "Retrieving kubeconfig from Vault into temp file..."
+      vault kv get -field=value secret/kubeconfig > ~/.kube/config.tmp
+
+      echo "Validating retrieved kubeconfig..."
+      if kubectl --kubeconfig ~/.kube/config.tmp get nodes >/dev/null 2>&1; then
+        echo "Valid kubeconfig retrieved, replacing active config..."
+        mv ~/.kube/config.tmp ~/.kube/config
+      else
+        echo "Retrieved kubeconfig is invalid! Keeping existing config."
+        rm ~/.kube/config.tmp
+        exit 1
+      fi
+
+      echo "Stopping port-forward..."
+      kill $PF_PID
+    EOT
+  }
+}

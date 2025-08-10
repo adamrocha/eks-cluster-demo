@@ -1,7 +1,7 @@
 resource "null_resource" "configure_kubectl" {
   depends_on = [aws_eks_cluster.eks]
 
-  triggers = {cluster_name = aws_eks_cluster.eks.id}
+  triggers = { cluster_name = aws_eks_cluster.eks.id }
 
   provisioner "local-exec" {
     command     = <<EOF
