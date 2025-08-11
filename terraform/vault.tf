@@ -10,7 +10,7 @@ resource "helm_release" "vault" {
     aws_vpc.eks
   ]
   name       = "vault"
-  namespace  = "vault-ns"
+  namespace  = var.vault_ns
   repository = "https://helm.releases.hashicorp.com"
   chart      = "vault"
   version    = "0.28.0"
@@ -80,7 +80,7 @@ resource "null_resource" "wait_for_vault" {
   provisioner "local-exec" {
     command = <<EOT
       echo "Waiting for Vault to be ready..."
-      kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault-ns --timeout=180s
+      kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n ${var.vault_ns} --timeout=180s
     EOT
   }
 }
@@ -91,10 +91,10 @@ resource "null_resource" "vault_port_forward" {
   provisioner "local-exec" {
     command = <<EOT
       echo "Starting Vault port-forward..."
-      kubectl port-forward svc/vault -n vault-ns 8200:8200 >/tmp/vault-pf.log 2>&1 &
+      kubectl port-forward svc/vault -n ${var.vault_ns} 8200:8200 >/tmp/vault-pf.log 2>&1 &
       echo "Vault UI should be available at http://localhost:8200/ui"
       echo "To stop port-forward, kill the background process:"
-      echo "  pkill -f 'kubectl port-forward svc/vault -n vault-ns 8200:8200'"
+      echo "  pkill -f 'kubectl port-forward svc/vault -n ${var.vault_ns} 8200:8200'"
     EOT
     # Keep this running during apply, or run detached (this is a simple fire-and-forget)
   }
@@ -108,13 +108,13 @@ resource "null_resource" "vault_init" {
       set -euo pipefail
 
       echo "Checking Vault initialization status..."
-      IS_INIT=$(kubectl exec -n vault-ns vault-0 -- vault status -format=json | jq -r '.initialized')
+      IS_INIT=$(kubectl exec -n ${var.vault_ns} vault-0 -- vault status -format=json | jq -r '.initialized')
 
       if [ "$IS_INIT" = "true" ]; then
         echo "Vault is already initialized, skipping init"
       else
         echo "Initializing Vault..."
-        kubectl exec -n vault-ns vault-0 -- vault operator init -key-shares=1 -key-threshold=1 > ~/vault_init.txt
+        kubectl exec -n ${var.vault_ns} vault-0 -- vault operator init -key-shares=1 -key-threshold=1 > ~/vault_init.txt
 
         VAULT_UNSEAL_KEY=$(grep 'Unseal Key 1:' vault_init.txt | awk '{print $4}')
         VAULT_ROOT_TOKEN=$(grep 'Initial Root Token:' vault_init.txt | awk '{print $4}')
@@ -136,7 +136,7 @@ resource "null_resource" "vault_store_kubeconfig" {
       set -euo pipefail
 
       echo "Starting Vault port-forward for storing kubeconfig..."
-      kubectl port-forward svc/vault -n vault-ns 8200:8200 >/tmp/vault-pf.log 2>&1 &
+      kubectl port-forward svc/vault -n ${var.vault_ns} 8200:8200 >/tmp/vault-pf.log 2>&1 &
       PF_PID=$!
 
       # Wait for Vault port to be ready (increase retries if needed)
@@ -205,8 +205,8 @@ resource "null_resource" "vault_retrieve_kubeconfig" {
       fi
 
       echo "Stopping port-forward..."
-      kill $PF_PID || true
-      pkill -f 'kubectl port-forward svc/vault -n vault-ns 8200:8200' || true
+      # kill $PF_PID || true
+      pkill -f 'kubectl port-forward svc/vault -n ${var.vault_ns} 8200:8200' || true
     EOT
   }
 }
