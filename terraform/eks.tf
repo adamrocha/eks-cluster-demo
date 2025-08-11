@@ -7,13 +7,13 @@ data "aws_eks_cluster_auth" "eks" {
 }
 
 data "external" "my_ip" {
-  program = ["bash", "../scripts/get_my_ip.sh"]
+  program = ["bash", "../scripts/fetch-ip.sh"]
 }
 
 resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
-    aws_vpc.eks,
+    aws_vpc.eks
     # null_resource.cleanup_sg
   ]
   name     = var.cluster_name
@@ -43,7 +43,9 @@ resource "aws_eks_cluster" "eks" {
 }
 
 resource "aws_eks_node_group" "node_group" {
-  depends_on      = [aws_eks_cluster.eks]
+  depends_on = [aws_eks_cluster.eks,
+    aws_internet_gateway.eks
+  ]
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
   node_role_arn   = aws_iam_role.eks_nodes.arn
