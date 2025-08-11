@@ -8,13 +8,17 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 - Automated EKS cluster provisioning
 - Integration with AWS CLI and kubectl
 - Sample Kubernetes manifests for application deployment
+- Development Vault Deployment
+- Prometheus Monitoring Stack 
 
 ## Prerequisites
 
 - AWS account with appropriate permissions
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- [eksctl](https://eksctl.io/)
+- [eksctl](https://eksctl.io/) (optional)
+- [helm](https://helm.sh/)
+- [terraform](https://www.terraform.io/)
 
 ## Usage
 
@@ -29,12 +33,14 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
     aws configure
     ```
 
-3. **Create the EKS cluster:**
+3. **Create the EKS cluster and deploy manifests:**
     ```sh
-    eksctl create cluster -f cluster.yaml
+    make tf-bucket
+    make tf-tasks
+    make tf-apply
     ```
 
-4. **Deploy sample workloads:**
+4. **Deploy workloads on the fly (optional):**
     ```sh
     kubectl apply -f manifests/
     ```
@@ -46,14 +52,15 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 
 ## Tools Used
 
+- **Terraform**: AWS infrastructure provisioning.
+- **AWS CLI**: Interface for managing AWS resources.
 - **eksctl**: Simplifies EKS cluster creation and management.
 - **kubectl**: Command-line tool for interacting with Kubernetes clusters.
-- **AWS CLI**: Interface for managing AWS resources.
 
 ## Cleanup
 
 To delete the EKS cluster and associated resources:
 ```sh
-eksctl delete cluster -f cluster.yaml
+    make tf-destroy
 ```
 
