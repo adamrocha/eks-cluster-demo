@@ -7,14 +7,16 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 
 - Automated EKS cluster provisioning
 - Integration with AWS CLI and kubectl
-- Sample Kubernetes manifests for application deployment
+- Example Kubernetes manifests (Deployments, Services, etc.)
 - Development Vault Deployment
-- Prometheus Monitoring Stack 
+- Prometheus Monitoring Stack Deployment
+- Scripts for docker image generation and upload to ECR (Elastic Container Registry)
 
 ## Prerequisites
 
 - AWS account with appropriate permissions
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [Docker](https://docs.docker.com/engine/install/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [eksctl](https://eksctl.io/) (optional)
 - [helm](https://helm.sh/)
