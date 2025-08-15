@@ -156,7 +156,7 @@ resource "null_resource" "vault_store_kubeconfig" {
       fi
 
       echo "Generating fresh kubeconfig with aws CLI"
-      aws eks update-kubeconfig --name ${aws_eks_cluster.eks.name} --region ${var.region}
+      aws eks update-kubeconfig --name ${var.cluster_name} --region ${var.region}
 
       echo "Storing kubeconfig in Vault..."
       cat ~/.kube/config | vault kv put secret/kubeconfig value=-
