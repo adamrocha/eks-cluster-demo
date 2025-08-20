@@ -6,6 +6,18 @@ data "aws_eks_cluster_auth" "eks" {
   name = aws_eks_cluster.eks.name
 }
 
+resource "aws_iam_openid_connect_provider" "oidc" {
+  url = aws_eks_cluster.eks.identity[0].oidc[0].issuer
+
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+
+  thumbprint_list = [
+    "9e99a48a9960b14926bb7f3b02e22da0ecd4e4e0" # Default thumbprint for EKS OIDC
+  ]
+}
+
 data "external" "my_ip" {
   program = ["bash", "../scripts/fetch-ip.sh"]
 }
