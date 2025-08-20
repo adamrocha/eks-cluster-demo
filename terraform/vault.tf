@@ -73,7 +73,6 @@ resource "helm_release" "vault" {
   }
 }
 
-
 resource "null_resource" "wait_for_vault" {
   depends_on = [helm_release.vault]
 
