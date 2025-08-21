@@ -1,4 +1,5 @@
 export AWS_PAGER :=
+SHELL := /bin/bash
 S3_BUCKET=terraform-state-bucket-2727
 AWS_REGION=us-east-1
 TF_DIR=terraform
@@ -69,19 +70,52 @@ tf-delete-ecr-repo:
 	@aws ecr delete-repository --repository-name hello-world-demo --region $(AWS_REGION) --force
 	@echo "✅ ECR repository 'hello-world-demo' deleted."
 
+# make clean : Interactive (default)
+# make clean DRY_RUN=1 : Dry run (show what would be deleted, don’t delete)
+# make clean FORCE=1 : Non-interactive force delete (useful in CI/CD)
+# make clean FORCE=1 DRY_RUN=1 : Non-interactive dry run in CI
+
 clean: check-aws
-	@echo "⚠️  WARNING: This will delete the S3 bucket: $(S3_BUCKET)"
-	@read -p "Are you sure? (y/N): " confirm; \
+	@if [ "$(FORCE)" = "1" ]; then \
+		confirm="y"; \
+	else \
+		echo "⚠️  WARNING: This will delete the S3 bucket: $(S3_BUCKET)"; \
+		read -p "Are you sure? (y/N): " confirm; \
+	fi; \
 	if [ "$$confirm" = "y" ]; then \
-		echo "🔄 Emptying bucket including versioned objects..."; \
-		aws s3api list-object-versions --bucket $(S3_BUCKET) \
-		--output json | jq -r '.Versions[]?, .DeleteMarkers[]? | [.Key, .VersionId] | @tsv' | \
-		while IFS=$$'\t' read -r key version; do \
-			aws s3api delete-object --bucket $(S3_BUCKET) --key "$$key" --version-id "$$version"; \
+		set -euo pipefail; \
+		echo "🔄 Scanning bucket for versioned objects..."; \
+		while true; do \
+			output=$$(aws s3api list-object-versions --bucket $(S3_BUCKET) --output json); \
+			delete_json=$$(echo "$$output" | jq '[.Versions[]?, .DeleteMarkers[]?] | map({Key: .Key, VersionId: .VersionId})'); \
+			count=$$(echo "$$delete_json" | jq 'length'); \
+			if [ "$$count" -eq 0 ]; then \
+				break; \
+			fi; \
+			echo "   found $$count objects..."; \
+			for start in $$(seq 0 1000 $$count); do \
+				batch=$$(echo "$$delete_json" | jq -c ".[$$start:$$start+1000]"); \
+				batch_count=$$(echo "$$batch" | jq 'length'); \
+				if [ "$$batch_count" -gt 0 ]; then \
+					if [ "$(DRY_RUN)" = "1" ]; then \
+						echo "   [DRY RUN] would delete $$batch_count objects:"; \
+						echo "$$batch" | jq -r '.[].Key + " (" + .VersionId + ")"'; \
+					else \
+						echo "   deleting $$batch_count objects..."; \
+						echo "$$batch" | jq '{Objects: ., Quiet: false}' | \
+							aws s3api delete-objects --bucket $(S3_BUCKET) --delete file:///dev/stdin >/dev/null; \
+					fi; \
+				fi; \
+			done; \
+			[ "$(DRY_RUN)" = "1" ] && break; \
 		done; \
-		echo "❌ Deleting bucket..."; \
-		aws s3api delete-bucket --bucket $(S3_BUCKET) --region $(AWS_REGION); \
-		echo "✅ Bucket $(S3_BUCKET) deleted."; \
+		if [ "$(DRY_RUN)" = "1" ]; then \
+			echo "❎ DRY RUN complete. Bucket NOT deleted."; \
+		else \
+			echo "❌ Deleting bucket..."; \
+			aws s3api delete-bucket --bucket $(S3_BUCKET) --region $(AWS_REGION); \
+			echo "✅ Bucket $(S3_BUCKET) deleted."; \
+		fi; \
 	else \
 		echo "❎ Aborted."; \
 	fi
