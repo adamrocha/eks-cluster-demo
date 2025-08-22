@@ -43,7 +43,7 @@ IMAGE_EXISTS=$(aws ecr describe-images \
 
 if [[ "${IMAGE_EXISTS}" == "[]" ]]; then
   echo "🚫 Image with tag '${IMAGE_TAG}' not found. Building and pushing..."
-  docker build \
+  docker buildx build \
   --platform ${PLATFORM_ARCH} \
   -t ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} .
   docker tag ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} ${ECR_URI}
