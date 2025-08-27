@@ -1,54 +1,106 @@
-#!/bin/bash
-# This script builds a Docker image, tags it for Amazon ECR, logs in to ECR,
-# checks if the ECR repository exists, creates it if not, and pushes the image to ECR.
+#!/usr/bin/env bash
+# Build and push hello-world Docker image to AWS ECR
+# Supports multi-platform builds, auto-creates repo, installs/updates docker-credential-ecr-login,
+# and checks image existence using docker pull
 
-# --------- CONFIGURATION ---------
-AWS_REGION="us-east-1"
-AWS_ACCOUNT_ID="802645170184"
-REPO_NAME="hello-world-demo"
-IMAGE_TAG="1.2.2"
-LOCAL_IMAGE_NAME="hello-world-demo"
-PLATFORM_ARCH="linux/arm64"
-# ---------------------------------
+set -euo pipefail
 
-cd ../kube/ || exit 1
+# ------------------------------------------------------------
+# Config
+# ------------------------------------------------------------
+AWS_REGION="us-east-1"                 # AWS region
+AWS_ACCOUNT_ID="802645170184"          # Replace with your AWS account ID
+REPO="hello-world"                     # Flat ECR repository name (no nested paths)
+IMAGE_TAG="${IMAGE_TAG:-1.2.2}"        # Default tag, can be overridden
+PLATFORMS="linux/amd64,linux/arm64"
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+export PROJECT_ROOT
 
-ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}"
+OS_TYPE="$(uname -s)"
 
-echo "🔐 Authenticating Docker to Amazon ECR..."
-aws ecr get-login-password \
-  --region "${AWS_REGION}" \
-  | docker login \
-  --username AWS \
-  --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+cd "$PROJECT_ROOT/kube/" || exit 1
 
-echo "🔍 Checking if ECR repository '${REPO_NAME}' exists..."
-if ! aws ecr describe-repositories \
-  --repository-names "${REPO_NAME}" \
-  --region "${AWS_REGION}" >/dev/null 2>&1; then
-  echo "📁 Repository not found. Creating ECR repository: ${REPO_NAME}"
-  aws ecr create-repository \
-  --repository-name "${REPO_NAME}" \
-  --region "${AWS_REGION}" >/dev/null
-else
-  echo "✅ Repository '${REPO_NAME}' already exists."
+# ------------------------------------------------------------
+# Verify Docker + Buildx
+# ------------------------------------------------------------
+if ! command -v docker &> /dev/null; then
+  echo "❌ Docker not installed."
+  exit 1
+fi
+if ! docker buildx version &> /dev/null; then
+  echo "❌ Docker Buildx not installed."
+  exit 1
 fi
 
-echo "🔍 Checking if image '${IMAGE_TAG}' exists in '${REPO_NAME}'..."
-IMAGE_EXISTS=$(aws ecr describe-images \
-  --repository-name "${REPO_NAME}" \
-  --region "${AWS_REGION}" \
-  --query "imageDetails[?imageTags && contains(imageTags, \`${IMAGE_TAG}\`)]" \
-  --output json)
-
-if [[ "${IMAGE_EXISTS}" == "[]" ]]; then
-  echo "🚫 Image with tag '${IMAGE_TAG}' not found. Building and pushing..."
-  docker buildx build \
-  --platform ${PLATFORM_ARCH} \
-  -t ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} .
-  docker tag ${LOCAL_IMAGE_NAME}:${IMAGE_TAG} ${ECR_URI}
-  docker push ${ECR_URI}
-  echo "✅ Image pushed to: ${ECR_URI}"
+# Ensure buildx builder exists
+if ! docker buildx inspect multiarch >/dev/null 2>&1; then
+  docker buildx create --name multiarch --use
 else
-  echo "✅ Image '${IMAGE_TAG}' already exists in '${REPO_NAME}'. No action needed."
+  docker buildx use multiarch
+fi
+
+# ------------------------------------------------------------
+# Ensure AWS ECR credential helper
+# ------------------------------------------------------------
+if ! command -v docker-credential-ecr-login >/dev/null 2>&1 && [[ "$OS_TYPE" == "Linux" ]]; then
+    echo "🔧 Installing docker-credential-ecr-login..."
+    sudo apt-get update -qq
+    sudo apt-get install -y amazon-ecr-credential-helper
+  elif ! command -v docker-credential-osxkeychain >/dev/null 2>&1 && [[ "$OS_TYPE" == "Darwin" ]]; then
+    echo "🔧 Installing docker-credential-helper for Mac..."
+    brew install docker-credential-helper 
+fi
+
+# Configure Docker to use the helper for the ECR registry
+DOCKER_CONFIG_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
+mkdir -p "$DOCKER_CONFIG_DIR"
+cat > "$DOCKER_CONFIG_DIR/config.json" <<EOF
+{
+  "credHelpers": {
+    "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com": "ecr-login"
+  }
+}
+EOF
+
+# ------------------------------------------------------------
+# Ensure ECR repository exists
+# ------------------------------------------------------------
+if ! aws ecr describe-repositories \
+    --region "$AWS_REGION" \
+    --repository-names "$REPO" &>/dev/null; then
+  echo "📦 Creating ECR repository: $REPO..."
+  aws ecr create-repository \
+    --region "$AWS_REGION" \
+    --repository-name "$REPO" >/dev/null
+else
+  echo "✅ ECR repository $REPO exists."
+fi
+
+# ------------------------------------------------------------
+# Image path
+# ------------------------------------------------------------
+IMAGE_FULL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}:${IMAGE_TAG}"
+
+# ------------------------------------------------------------
+# Check if image tag exists using docker pull (multi-arch safe)
+# ------------------------------------------------------------
+if docker pull "$IMAGE_FULL" &>/dev/null; then
+  echo "✅ Image $IMAGE_FULL already exists in ECR."
+  exit 0
+else
+  echo "❌ Image $IMAGE_FULL not found. Building and pushing..."
+fi
+
+# ------------------------------------------------------------
+# Build + Push
+# ------------------------------------------------------------
+if ! docker buildx build \
+  --platform "$PLATFORMS" \
+  -t "$IMAGE_FULL" \
+  --push .; then
+  echo "❌ Docker build failed."
+  exit 1
+else
+  echo "✅ Successfully built and pushed $IMAGE_FULL."
+  exit 0
 fi
