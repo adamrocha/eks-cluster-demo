@@ -10,7 +10,7 @@ set -euo pipefail
 # ------------------------------------------------------------
 AWS_REGION="us-east-1"                 # AWS region
 AWS_ACCOUNT_ID="802645170184"          # Replace with your AWS account ID
-REPO="hello-world"                     # Flat ECR repository name (no nested paths)
+REPO="hello-world-demo"                     # Flat ECR repository name (no nested paths)
 IMAGE_TAG="${IMAGE_TAG:-1.2.2}"        # Default tag, can be overridden
 PLATFORMS="linux/amd64,linux/arm64"
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
