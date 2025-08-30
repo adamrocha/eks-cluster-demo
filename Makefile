@@ -15,6 +15,10 @@ check-aws:
 		echo "✅ AWS credentials valid."; \
 	fi
 
+install-tools:
+	@echo "🚀 Running install-tools script..."
+	@/bin/bash ./scripts/install-tools.sh
+
 tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
 	@echo "🔄 Running Terraform bootstrap..."
 	@echo "✅ Terraform tasks completed successfully."
