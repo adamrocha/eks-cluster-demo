@@ -1,5 +1,5 @@
-#!/bin/bash
-# This script sets up the kubeconfig for an EKS cluster.
+#!/usr/bin/env bash
+# This script updates the kubeconfig for an EKS cluster.
 
 
 CLUSTER_NAME="eks-demo-cluster"
