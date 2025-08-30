@@ -18,59 +18,72 @@ resource "helm_release" "vault" {
 
   create_namespace = true
 
-  set {
-    name  = "server.dev.enabled"
-    value = "true"
-  }
-  set {
-    name  = "server.ui"
-    value = "true"
-  }
-
-  set {
-    name  = "server.ha.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "server.ha.replicas"
-    value = "3"
-  }
-
-  set {
-    name  = "server.ha.storage.type"
-    value = "consul"
-  }
-
-  set {
-    name  = "server.ha.storage.consul.address"
-    value = "consul:8500"
-  }
-
-  set {
-    name  = "server.ha.storage.consul.path"
-    value = "vault/"
-  }
-
-  set {
-    name  = "injector.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "injector.replicaCount"
-    value = "1"
-  }
-
-  set {
-    name  = "injector.authPath"
-    value = "auth/kubernetes"
-  }
-
-  set {
-    name  = "injector.logLevel"
-    value = "info"
-  }
+  set = [
+    {
+      name  = "server.dev.enabled"
+      value = "true"
+    },
+    {
+      name  = "server.ui"
+      value = "true"
+    },
+    {
+      name  = "server.ha.enabled"
+      value = "true"
+    },
+    {
+      name  = "server.ha.replicas"
+      value = "3"
+    },
+    {
+      name  = "server.ha.storage.type"
+      value = "consul"
+    },
+    {
+      name  = "server.ha.storage.consul.address"
+      value = "consul:8500"
+    },
+    {
+      name  = "server.ha.storage.consul.path"
+      value = "vault/"
+    },
+    {
+      name  = "injector.enabled"
+      value = "true"
+    },
+    {
+      name  = "injector.replicaCount"
+      value = "1"
+    },
+    {
+      name  = "injector.image.tag"
+      value = "0.13.0"
+    },
+    {
+      name  = "injector.resources.limits.cpu"
+      value = "100m"
+    },
+    {
+      name  = "injector.resources.limits.memory"
+      value = "128Mi"
+    },
+    {
+      name  = "injector.resources.requests.cpu"
+      value = "100m"
+    },
+    {
+      name  = "injector.resources.requests.memory"
+      value = "128Mi"
+    },
+    {
+      name  = "injector.authPath"
+      value = "auth/kubernetes"
+    },
+    {
+      name  = "injector.logLevel"
+      value = "info"
+    }
+  ]
 }
 
 resource "null_resource" "wait_for_vault" {
