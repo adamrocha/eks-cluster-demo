@@ -4,14 +4,7 @@ S3_BUCKET=terraform-state-bucket-2727
 AWS_REGION=us-east-1
 TF_DIR=terraform
 
-.PHONY: default init-bucket check-aws clean
-
-default: check-aws init-bucket
-
-tf-tasks: tf-format tf-init tf-validate tf-plan
-	@echo "🔄 Running Terraform tasks..."
-	@echo "✅ Terraform tasks completed successfully."
-	@echo "🚀 To apply changes, run 'make tf-apply'."
+.PHONY: check-aws
 
 check-aws:
 	@echo "🔍 Checking AWS credentials..."
@@ -22,10 +15,16 @@ check-aws:
 		echo "✅ AWS credentials valid."; \
 	fi
 
+tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
+	@echo "🔄 Running Terraform bootstrap..."
+	@echo "✅ Terraform tasks completed successfully."
+	@echo "🚀 To apply changes, run 'make tf-apply'."
+
 tf-bucket: check-aws
 	@echo "🔍 Checking S3 bucket: $(S3_BUCKET)"
 	@if aws s3api head-bucket --bucket "$(S3_BUCKET)" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
 		echo "✅ Bucket $(S3_BUCKET) already exists."; \
+		exit 1; \
 	else \
 		echo "🚀 Creating bucket $(S3_BUCKET)..."; \
 		if [ "$(AWS_REGION)" = "us-east-1" ]; then \
@@ -64,6 +63,11 @@ tf-output:
 	cd $(TF_DIR) && terraform output
 	@echo "✅ Terraform outputs displayed."
 	@echo "🔍 To view specific output, run 'terraform output <output_name>'."
+
+tf-state:
+	cd $(TF_DIR) && terraform state list
+	@echo "✅ Terraform state listed."
+	@echo "🔍 To view specific resource, run 'terraform state show <resource_name>'."
 
 tf-delete-ecr-repo:
 	@echo "⚠️  Deleting ECR repository: hello-world-demo"
