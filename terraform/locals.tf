@@ -1,4 +1,4 @@
-resource "null_resource" "configure_kubectl" {
+resource "null_resource" "update_kubeconfig" {
   depends_on = [aws_eks_cluster.eks]
 
   triggers = { cluster_name = aws_eks_cluster.eks.id }
