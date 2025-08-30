@@ -3,6 +3,7 @@
 # Supports multi-platform builds, auto-creates repo, installs/updates docker-credential-ecr-login,
 # and checks image existence using docker pull
 
+
 set -euo pipefail
 
 # ------------------------------------------------------------
@@ -10,15 +11,34 @@ set -euo pipefail
 # ------------------------------------------------------------
 AWS_REGION="us-east-1"                 # AWS region
 AWS_ACCOUNT_ID="802645170184"          # Replace with your AWS account ID
-REPO="hello-world-demo"                     # Flat ECR repository name (no nested paths)
+REPO="hello-world-demo"                # Flat ECR repository name (no nested paths)
 IMAGE_TAG="${IMAGE_TAG:-1.2.2}"        # Default tag, can be overridden
 PLATFORMS="linux/amd64,linux/arm64"
-PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-export PROJECT_ROOT
+# PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# export PROJECT_ROOT
 
 OS_TYPE="$(uname -s)"
 
 cd "$PROJECT_ROOT/kube/" || exit 1
+
+# ------------------------------------------------------------
+# Image path
+# ------------------------------------------------------------
+IMAGE_FULL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}:${IMAGE_TAG}"
+
+
+# ------------------------------------------------------------
+# Check if image tag exists in ECR using AWS CLI (no Docker required)
+# ------------------------------------------------------------
+if aws ecr describe-images \
+  --repository-name "$REPO" \
+  --region "$AWS_REGION" \
+  --image-ids imageTag="$IMAGE_TAG" \
+  --query 'imageDetails[0].imageTags' \
+  --output text 2>/dev/null | grep -qw "$IMAGE_TAG"; then
+  echo "✅ Image $IMAGE_FULL already exists in ECR."
+  exit 0
+fi
 
 # ------------------------------------------------------------
 # Verify Docker + Buildx
@@ -46,7 +66,7 @@ if ! command -v docker-credential-ecr-login >/dev/null 2>&1 && [[ "$OS_TYPE" == 
     echo "🔧 Installing docker-credential-ecr-login..."
     sudo apt-get update -qq
     sudo apt-get install -y amazon-ecr-credential-helper
-  elif ! command -v docker-credential-osxkeychain >/dev/null 2>&1 && [[ "$OS_TYPE" == "Darwin" ]]; then
+elif ! command -v docker-credential-osxkeychain >/dev/null 2>&1 && [[ "$OS_TYPE" == "Darwin" ]]; then
     echo "🔧 Installing docker-credential-helper for Mac..."
     brew install docker-credential-helper 
 fi
@@ -74,21 +94,6 @@ if ! aws ecr describe-repositories \
     --repository-name "$REPO" >/dev/null
 else
   echo "✅ ECR repository $REPO exists."
-fi
-
-# ------------------------------------------------------------
-# Image path
-# ------------------------------------------------------------
-IMAGE_FULL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}:${IMAGE_TAG}"
-
-# ------------------------------------------------------------
-# Check if image tag exists using docker pull (multi-arch safe)
-# ------------------------------------------------------------
-if docker pull "$IMAGE_FULL" &>/dev/null; then
-  echo "✅ Image $IMAGE_FULL already exists in ECR."
-  exit 0
-else
-  echo "❌ Image $IMAGE_FULL not found. Building and pushing..."
 fi
 
 # ------------------------------------------------------------
