@@ -1,0 +1,18 @@
+
+[project]
+name = "eks-cluster-demo"
+version = "0.1.0"
+description = "Python scripts for EKS cluster management"
+authors = [{name = "devops"}]
+requires-python = ">=3.9,<4.0"
+dependencies = [
+	"boto3==1.40.21"
+]
+
+[tool.poetry]
+package-mode = false
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
