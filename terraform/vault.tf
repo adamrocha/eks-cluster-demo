@@ -9,15 +9,13 @@ resource "helm_release" "vault" {
     aws_subnet.public,
     aws_vpc.eks
   ]
-  name       = "vault"
-  namespace  = var.vault_ns
-  repository = "https://helm.releases.hashicorp.com"
-  chart      = "vault"
-  version    = "0.28.0"
-  timeout    = 600
-
+  name             = "vault"
+  repository       = "https://helm.releases.hashicorp.com"
+  chart            = "vault"
+  version          = "0.28.0"
+  namespace        = var.vault_ns
   create_namespace = true
-
+  timeout          = 600
   set = [
     {
       name  = "server.dev.enabled"
