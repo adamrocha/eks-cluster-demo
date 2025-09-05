@@ -6,7 +6,7 @@ description = "Python scripts for EKS cluster management"
 authors = [{name = "devops"}]
 requires-python = ">=3.9,<4.0"
 dependencies = [
-	"boto3==1.40.21"
+    "boto3 (>=1.40.25,<2.0.0)"
 ]
 
 [tool.poetry]
