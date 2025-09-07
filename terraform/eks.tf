@@ -21,7 +21,7 @@ resource "aws_eks_cluster" "eks" {
     subnet_ids              = aws_subnet.public[*].id
     endpoint_public_access  = true
     endpoint_private_access = true
-    public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
+    public_access_cidrs     = ["0.0.0.0/32"]
   }
 
   enabled_cluster_log_types = [
