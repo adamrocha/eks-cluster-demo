@@ -49,9 +49,12 @@ jobs:
         # uses: python-poetry/poetry-action@v2
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: '2.1.0' # Pin to a specific version for reproducibility
-      - name: Install dependencies
-        run: poetry install
+          poetry-version: '2.1.0'
+
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
 
       - name: Install Vault CLI
         run: |
