@@ -78,12 +78,12 @@ tf-delete-ecr-repo:
 	@aws ecr delete-repository --repository-name hello-world-demo --region $(AWS_REGION) --force
 	@echo "✅ ECR repository 'hello-world-demo' deleted."
 
-# make clean : Interactive (default)
-# make clean DRY_RUN=1 : Dry run (show what would be deleted, don’t delete)
-# make clean FORCE=1 : Non-interactive force delete (useful in CI/CD)
-# make clean FORCE=1 DRY_RUN=1 : Non-interactive dry run in CI
+# make nuke : Interactive (default)
+# make nuke DRY_RUN=1 : Dry run (show what would be deleted, don’t delete)
+# make nuke FORCE=1 : Non-interactive force delete (useful in CI/CD)
+# make nuke FORCE=1 DRY_RUN=1 : Non-interactive dry run in CI
 
-clean: check-aws
+nuke: check-aws
 	@if [ "$(FORCE)" = "1" ]; then \
 		confirm="y"; \
 	else \
