@@ -56,7 +56,11 @@ jobs:
         run: terraform validate
         working-directory: terraform
 
-      - name: Run Install checks
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+
+      - name: Health Check Scripts
         run: |
             set -e
             echo "Running poetry check..."
