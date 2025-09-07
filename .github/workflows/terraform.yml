@@ -68,9 +68,9 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false
 
-      # - name: Terraform Apply
-      #   if: github.ref == 'refs/heads/terraform' && github.event_name == 'push'
-      #   run: terraform apply -auto-approve -input=false
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/actions' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
 
       - name: Health Check Scripts
         run: |
