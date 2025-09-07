@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [ terraform ]
+    # branches: [ actions ]
   pull_request:
-    branches: [ terraform ]
+    branches: [ actions ]
 
 permissions:
   contents: read
