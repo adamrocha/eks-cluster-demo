@@ -1,12 +1,8 @@
 name: EKS Cluster Demo CI
 
-name: EKS Cluster Demo CI
-
-# Add here:
 concurrency:
   group: terraform-state-${{ github.ref }}
   cancel-in-progress: true
-
 
 permissions:
   contents: read
