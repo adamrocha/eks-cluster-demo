@@ -66,9 +66,6 @@ jobs:
             cat fetch-ip.out
             echo "Running setup-tfstate-bucket.py..."
             poetry run python scripts/setup-tfstate-bucket.py > setup-tfstate-bucket.out 2>&1 || { echo "setup-tfstate-bucket.py failed"; cat setup-tfstate-bucket.out; exit 1; }
-            cat setup-tfstate-bucket.out
-            echo "Running update-kubeconfig.py..."
-            poetry run python scripts/update-kubeconfig.py > update-kubeconfig.out 2>&1 || { echo "update-kubeconfig.py failed"; cat update-kubeconfig.out; exit 1; }
-            cat update-kubeconfig.out
+            cat setup-tfstate-bucket.out   
       # Add more steps for tests, linting, or deployment as needed
 
