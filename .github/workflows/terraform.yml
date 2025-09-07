@@ -57,20 +57,16 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Format
-        run: terraform fmt -check -recursive
-        working-directory: terraform
+        run: terraform fmt -check -recursive  
 
       - name: Terraform Init
         run: terraform init
-        working-directory: terraform
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: terraform
 
       - name: Terraform Plan
         run: terraform plan -input=false
-        working-directory: terraform
 
       # - name: Terraform Apply
       #   if: github.ref == 'refs/heads/terraform' && github.event_name == 'push'
