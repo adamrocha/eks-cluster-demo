@@ -34,9 +34,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry install
+        uses: python-poetry/poetry-action@v1
+        with:
+          poetry-version: '1.7.1' # Pin to a specific version for reproducibility
+      - name: Install dependencies
+        run: poetry install
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
