@@ -1,0 +1,101 @@
+name: EKS Cluster Demo CI
+
+concurrency:
+  group: terraform-state-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    # branches: [ actions ]
+  pull_request:
+    branches: [ actions ]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform CI'
+    runs-on: ubuntu-latest
+    # environment: testing
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform
+
+    env:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        # uses: python-poetry/poetry-action@v2
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '2.1.0'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.1'
+
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Install Vault CLI
+        run: |
+          VAULT_VERSION=1.18.2
+          curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip
+          unzip vault.zip
+          sudo mv vault /usr/local/bin/
+          vault --version
+          rm vault.zip
+
+      - name: Health Check Scripts
+        run: |
+            set -e
+            echo "Running poetry check..."
+            poetry check || { echo "poetry check failed"; exit 1; }
+            echo "Running fetch-ip.py..."
+            
+            echo "Running setup-tfstate-bucket.py..."
+            poetry run python ../scripts/setup-tfstate-bucket.py > setup-tfstate-bucket.out 2>&1 || { echo "setup-tfstate-bucket.py failed"; cat setup-tfstate-bucket.out; exit 1; }
+            cat setup-tfstate-bucket.out
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive  
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      # - name: Terraform Apply
+      #   if: github.ref == 'refs/heads/actions' && github.event_name == 'push'
+      #   run: terraform apply -auto-approve -input=false
+
+      # Add more steps for tests, linting, or deployment as needed
+
