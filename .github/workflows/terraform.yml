@@ -53,8 +53,25 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
+      - name: Install Vault CLI
+        uses: hashicorp/setup-vault@v1
+        with:
+          version: '1.12.3' #Pin to a specific version for reproducibility
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Health Check Scripts
+        run: |
+            set -e
+            echo "Running poetry check..."
+            poetry check || { echo "poetry check failed"; exit 1; }
+            echo "Running fetch-ip.py..."
+            poetry run python scripts/fetch-ip.py > fetch-ip.out 2>&1 || { echo "fetch-ip.py failed"; cat fetch-ip.out; exit 1; }
+            cat fetch-ip.out
+            echo "Running setup-tfstate-bucket.py..."
+            poetry run python scripts/setup-tfstate-bucket.py > setup-tfstate-bucket.out 2>&1 || { echo "setup-tfstate-bucket.py failed"; cat setup-tfstate-bucket.out; exit 1; }
+            cat setup-tfstate-bucket.out
 
       - name: Terraform Format
         run: terraform fmt -check -recursive  
@@ -72,16 +89,5 @@ jobs:
         if: github.ref == 'refs/heads/actions' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
-      - name: Health Check Scripts
-        run: |
-            set -e
-            echo "Running poetry check..."
-            poetry check || { echo "poetry check failed"; exit 1; }
-            echo "Running fetch-ip.py..."
-            poetry run python scripts/fetch-ip.py > fetch-ip.out 2>&1 || { echo "fetch-ip.py failed"; cat fetch-ip.out; exit 1; }
-            cat fetch-ip.out
-            echo "Running setup-tfstate-bucket.py..."
-            poetry run python scripts/setup-tfstate-bucket.py > setup-tfstate-bucket.out 2>&1 || { echo "setup-tfstate-bucket.py failed"; cat setup-tfstate-bucket.out; exit 1; }
-            cat setup-tfstate-bucket.out   
       # Add more steps for tests, linting, or deployment as needed
 
