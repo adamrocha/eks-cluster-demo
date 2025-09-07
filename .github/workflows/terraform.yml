@@ -56,7 +56,6 @@ jobs:
       - name: Install tools
         run: |
             bash ../scripts/install-tools.sh
-        working-directory: scripts
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
