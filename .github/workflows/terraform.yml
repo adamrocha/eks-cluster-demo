@@ -53,11 +53,13 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Install tools
+      - name: Install Vault CLI
         run: |
-            sudo apt-get update -y
-            sudo apt-get upgrade -y
-            bash ../scripts/install-tools.sh
+          VAULT_VERSION=1.18.2
+          curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip
+          unzip vault.zip
+          sudo mv vault /usr/local/bin/
+          vault --version
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
