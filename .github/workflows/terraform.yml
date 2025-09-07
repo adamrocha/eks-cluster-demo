@@ -90,6 +90,6 @@ jobs:
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/actions' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        run: terraform destroy -auto-approve -input=false
 
       # Add more steps for tests, linting, or deployment as needed
