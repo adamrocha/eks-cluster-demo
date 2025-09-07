@@ -56,7 +56,18 @@ jobs:
         run: terraform validate
         working-directory: terraform
 
-      - name: Run Install checks
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: |
+          set -e
+          terraform apply -auto-approve tfplan || { echo "Terraform apply failed"; exit 1; }
+        working-directory: terraform
+        environment: production
+
+      - name: Health Check Scripts
         run: |
             set -e
             echo "Running poetry check..."
