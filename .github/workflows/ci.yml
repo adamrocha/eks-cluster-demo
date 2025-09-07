@@ -34,7 +34,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Poetry
-        uses: python-poetry/poetry-action@v1
+        uses: python-poetry/poetry-action@v2
         with:
           poetry-version: '2.1.0' # Pin to a specific version for reproducibility
       - name: Install dependencies
