@@ -53,10 +53,10 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Install Vault CLI
-        uses: hashicorp/setup-vault@v1
-        with:
-          version: '1.12.3' #Pin to a specific version for reproducibility
+      - name: Install tools
+        run: |
+            install-tools.sh
+        working-directory: scripts
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -90,4 +90,3 @@ jobs:
         run: terraform apply -auto-approve -input=false
 
       # Add more steps for tests, linting, or deployment as needed
-
