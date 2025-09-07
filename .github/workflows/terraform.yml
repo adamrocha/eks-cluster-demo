@@ -55,6 +55,8 @@ jobs:
 
       - name: Install tools
         run: |
+            sudo apt-get update -y
+            sudo apt-get upgrade -y
             bash ../scripts/install-tools.sh
 
       - name: Set up Terraform
