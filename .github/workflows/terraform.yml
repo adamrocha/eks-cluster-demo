@@ -55,7 +55,7 @@ jobs:
 
       - name: Install tools
         run: |
-            install-tools.sh
+            bash scripts/install-tools.sh
         working-directory: scripts
 
       - name: Set up Terraform
