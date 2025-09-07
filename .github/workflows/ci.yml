@@ -36,7 +36,7 @@ jobs:
       - name: Install Poetry
         uses: python-poetry/poetry-action@v1
         with:
-          poetry-version: '1.7.1' # Pin to a specific version for reproducibility
+          poetry-version: '2.1.0' # Pin to a specific version for reproducibility
       - name: Install dependencies
         run: poetry install
 
@@ -55,19 +55,9 @@ jobs:
         run: terraform validate
         working-directory: terraform
 
-      - name: Run Python Checks
+      - name: Run Install checks
         run: |
-          set -e
-          echo "Running poetry check..."
-          poetry check || { echo "poetry check failed"; exit 1; }
-          echo "Running fetch-ip.py..."
-          poetry run python scripts/fetch-ip.py > fetch-ip.out 2>&1 || { echo "fetch-ip.py failed"; cat fetch-ip.out; exit 1; }
-          cat fetch-ip.out
-          echo "Running setup-tfstate-bucket.py..."
-          poetry run python scripts/setup-tfstate-bucket.py > setup-tfstate-bucket.out 2>&1 || { echo "setup-tfstate-bucket.py failed"; cat setup-tfstate-bucket.out; exit 1; }
-          cat setup-tfstate-bucket.out
-          echo "Running update-kubeconfig.py..."
-          poetry run python scripts/update-kubeconfig.py > update-kubeconfig.out 2>&1 || { echo "update-kubeconfig.py failed"; cat update-kubeconfig.out; exit 1; }
-          cat update-kubeconfig.out
+            ./scripts/install_check.sh
+            # Add more commands as needed
       # Add more steps for tests, linting, or deployment as needed
 
