@@ -66,6 +66,30 @@ jobs:
       - name: Health check AWS credentials
         run: aws sts get-caller-identity >/dev/null || { echo "Not authenticated with AWS"; exit 1; }
 
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          APP_NAME=hello-world
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/hello-world-demo:${{ github.sha }}
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name eks-demo-cluster --region us-east-1
+
+      - name: Set new image on Kubernetes deployment
+        run: |
+          kubectl set image deployment/hello-world hello-world=${IMAGE_URI}
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/$APP_NAME $APP_NAME-${IMAGE_URI}
+
       - name: Terraform Format
         run: terraform fmt -check -recursive  
 
