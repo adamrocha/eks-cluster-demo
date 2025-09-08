@@ -79,5 +79,7 @@ jobs:
           if ! kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s; then
             echo "Rollout failed, rolling back..."
             kubectl rollout undo deployment/hello-world -n hello-world-ns
+            echo "::error::Rollback complete. Deployment did not succeed."
             exit 1
           fi
+          echo "Rollout succeeded!"
