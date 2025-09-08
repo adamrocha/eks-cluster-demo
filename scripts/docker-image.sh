@@ -14,8 +14,9 @@ AWS_ACCOUNT_ID="802645170184"          # Replace with your AWS account ID
 REPO="hello-world-demo"                # Flat ECR repository name (no nested paths)
 IMAGE_TAG="${IMAGE_TAG:-1.2.2}"        # Default tag, can be overridden
 PLATFORMS="linux/amd64,linux/arm64"
-# PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-# export PROJECT_ROOT
+
+export PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$PROJECT_ROOT/kube/" || exit 1
 
 OS_TYPE="$(uname -s)"
 
