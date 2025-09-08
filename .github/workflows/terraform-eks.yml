@@ -70,5 +70,5 @@ jobs:
       - name: Update EKS Deployment with New Image
         run: |
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region $AWS_REGION
-          kubectl set image deployment/hello-world hello-world="$IMAGE_URI"
-          kubectl rollout status deployment/hello-world
+          kubectl set image deployment/hello-world -n hello-world-ns hello-world=${{ env.IMAGE_URI }}
+          kubectl rollout status deployment/hello-world -n hello-world-ns
