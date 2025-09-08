@@ -51,10 +51,10 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Install Kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
+      # - name: Install Kubectl
+      #   uses: azure/setup-kubectl@v3
+      #   with:
+      #     version: 'latest'
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -83,6 +83,6 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false
 
-      - name: Terraform Destroy
+      - name: Terraform Apply
         if: github.ref == 'refs/heads/test' || github.ref == 'refs/heads/actions'
-        run: terraform destroy -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false
