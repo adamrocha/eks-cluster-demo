@@ -39,7 +39,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '2.1.0'
 
       - name: Install dependencies
         run: poetry install
@@ -63,6 +65,20 @@ jobs:
 
       - name: Health check AWS credentials
         run: aws sts get-caller-identity >/dev/null || { echo "Not authenticated with AWS"; exit 1; }
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive  
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      
 
 
     
