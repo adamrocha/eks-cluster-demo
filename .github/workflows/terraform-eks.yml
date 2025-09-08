@@ -72,4 +72,12 @@ jobs:
           aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
           IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$IMAGE_TAG"
           kubectl set image deployment/hello-world -n hello-world-ns hello-world=$IMAGE_URI
-          kubectl rollout status deployment/hello-world -n hello-world-ns
+          kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s
+      - name: Verify Kubernetes rollout
+        run: |
+          set -e
+          if ! kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s; then
+            echo "Rollout failed, rolling back..."
+            kubectl rollout undo deployment/hello-world -n hello-world-ns
+            exit 1
+          fi
