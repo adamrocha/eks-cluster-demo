@@ -20,8 +20,7 @@ env:
   EKS_CLUSTER_NAME: eks-demo-cluster
   AWS_ACCOUNT_ID: "802645170184"
   REPO: "hello-world-demo"
-  IMAGE_TAG: "1.2.3"
-  IMAGE_URI: "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$IMAGE_TAG"
+  IMAGE_TAG: "${{ github.sha }}"
 
 jobs:
   terraform:
@@ -69,6 +68,7 @@ jobs:
         run: terraform apply -auto-approve -input=false
       - name: Update EKS Deployment with New Image
         run: |
-          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region $AWS_REGION
-          kubectl set image deployment/hello-world -n hello-world-ns hello-world=${{ env.IMAGE_URI }}
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+          IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$IMAGE_TAG"
+          kubectl set image deployment/hello-world -n hello-world-ns hello-world=$IMAGE_URI
           kubectl rollout status deployment/hello-world -n hello-world-ns
