@@ -20,88 +20,45 @@ env:
 
 jobs:
   terraform:
-    name: 'Terraform CI'
+    name: Terraform EKS
     runs-on: ubuntu-latest
-    # environment: testing
-
     defaults:
       run:
         shell: bash
         working-directory: terraform
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install direnv
-        run: |
-          curl -sfL https://direnv.net/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: '2.1.0'
-
       - name: Install dependencies
         run: poetry install
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.1'
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: "${{ env.AWS_ACCESS_KEY_ID }}"
           aws-secret-access-key: "${{ env.AWS_SECRET_ACCESS_KEY }}"
           aws-region: "${{ env.AWS_REGION }}"
-
       - name: Health check AWS credentials
         run: aws sts get-caller-identity >/dev/null || { echo "Not authenticated with AWS"; exit 1; }
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image to Amazon ECR
-        run: |
-          APP_NAME=hello-world
-          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/hello-world-demo:${{ github.sha }}
-          docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-
-      - name: Update kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig --name eks-demo-cluster --region us-east-1
-
-      - name: Set new image on Kubernetes deployment
-        run: |
-          kubectl set image deployment/hello-world hello-world=${IMAGE_URI}
-
-      - name: Verify rollout
-        run: |
-          kubectl rollout status deployment/$APP_NAME $APP_NAME-${IMAGE_URI}
-
       - name: Terraform Format
-        run: terraform fmt -check -recursive  
-
+        run: terraform fmt -check -recursive
       - name: Terraform Init
         run: terraform init
-
       - name: Terraform Validate
         run: terraform validate
-
       - name: Terraform Plan
         run: terraform plan -input=false
-
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/test' || github.ref == 'refs/heads/actions'
+        if: ${{ github.ref == 'refs/heads/test' || github.ref == 'refs/heads/actions' }}
         run: terraform apply -auto-approve -input=false
