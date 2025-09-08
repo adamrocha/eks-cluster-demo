@@ -17,6 +17,11 @@ env:
   AWS_REGION: us-east-1
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  EKS_CLUSTER_NAME: eks-demo-cluster
+  AWS_ACCOUNT_ID: "802645170184"
+  REPO: "hello-world-demo"
+  IMAGE_TAG: "1.2.3"
+  IMAGE_URI: "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$IMAGE_TAG"
 
 jobs:
   terraform:
@@ -62,3 +67,8 @@ jobs:
       - name: Terraform Apply
         if: ${{ github.ref == 'refs/heads/test' || github.ref == 'refs/heads/actions' }}
         run: terraform apply -auto-approve -input=false
+      - name: Update EKS Deployment with New Image
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region $AWS_REGION
+          kubectl set image deployment/hello-world hello-world="$IMAGE_URI"
+          kubectl rollout status deployment/hello-world
