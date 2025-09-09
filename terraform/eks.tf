@@ -22,6 +22,7 @@ resource "aws_eks_cluster" "eks" {
     endpoint_public_access  = true
     endpoint_private_access = true
     public_access_cidrs     = ["0.0.0.0/0"]
+    # public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
   }
 
   enabled_cluster_log_types = [
