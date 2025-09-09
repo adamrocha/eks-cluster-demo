@@ -18,8 +18,8 @@ env:
   EKS_CLUSTER_NAME: eks-demo-cluster
   AWS_ACCOUNT_ID: "802645170184"
   REPO: "hello-world-demo"
-  IMAGE_TAG: "1.2.5"
-  # IMAGE_TAG: ${{ github.sha }}
+  # IMAGE_TAG: "1.2.5"
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   terraform:
