@@ -73,7 +73,7 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Prepare backend (S3 + DynamoDB)
-        run: make -C terraform tf-backend
+        run: ../make terraform tf-backend
 
       - name: Terraform Format
         run: terraform fmt -check -recursive
