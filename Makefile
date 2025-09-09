@@ -1,6 +1,7 @@
 export AWS_PAGER :=
 SHELL := /bin/bash
 S3_BUCKET=terraform-state-bucket-2727
+DYNAMO_TABLE=terraform-locks
 AWS_REGION=us-east-1
 TF_DIR=terraform
 
@@ -19,10 +20,13 @@ install-tools:
 	@echo "🚀 Running install-tools script..."
 	@/bin/bash ./scripts/install-tools.sh
 
-tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
+tf-bootstrap: tf-format tf-init tf-validate tf-plan
 	@echo "🔄 Running Terraform bootstrap..."
 	@echo "✅ Terraform tasks completed successfully."
 	@echo "🚀 To apply changes, run 'make tf-apply'."
+
+tf-backend: tf-bucket tf-locks
+	@echo "✅ Backend infrastructure ready"
 
 tf-bucket: check-aws
 	@echo "🔍 Checking S3 bucket: $(S3_BUCKET)"
@@ -37,6 +41,21 @@ tf-bucket: check-aws
 			aws s3api create-bucket --bucket "$(S3_BUCKET)" --region "$(AWS_REGION)" \
 				--create-bucket-configuration LocationConstraint="$(AWS_REGION)"; \
 		fi; \
+	fi
+
+tf-locks: check-aws
+	@echo "🔍 Checking DynamoDB table: $(DYNAMO_TABLE)"
+	@if aws dynamodb describe-table --table-name "$(DYNAMO_TABLE)" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
+		echo "✅ Table $(DYNAMO_TABLE) already exists."; \
+		exit 0; \
+	else \
+		echo "🚀 Creating table $(DYNAMO_TABLE)..."; \
+		aws dynamodb create-table \
+			--table-name "$(DYNAMO_TABLE)" \
+			--attribute-definitions AttributeName=LockID,AttributeType=S \
+			--key-schema AttributeName=LockID,KeyType=HASH \
+			--billing-mode PAY_PER_REQUEST \
+			--region "$(AWS_REGION)"; \
 	fi
 
 tf-format:
@@ -83,7 +102,7 @@ tf-delete-ecr-repo:
 # make nuke FORCE=1 : Non-interactive force delete (useful in CI/CD)
 # make nuke FORCE=1 DRY_RUN=1 : Non-interactive dry run in CI
 
-nuke: check-aws
+nuke_tf_bucket: check-aws
 	@if [ "$(FORCE)" = "1" ]; then \
 		confirm="y"; \
 	else \
