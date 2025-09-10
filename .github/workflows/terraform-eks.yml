@@ -163,7 +163,7 @@ jobs:
 
       - name: Safety check for branch name
         run: |
-            if [[ "${{ github.event.ref }}" != feature/* ]] && [[ "${{ github.event.ref }}" != fix/* ]]; then
+            if [[ ! "${{ github.event.ref }}" =~ ^feature/ ]] && [[ ! "${{ github.event.ref }}" =~ ^fix/ ]]; then
             echo "Branch name does not match safety pattern. Skipping destroy."
             exit 1
             fi
