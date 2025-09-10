@@ -6,9 +6,10 @@ concurrency:
 
 on:
   push:
-    # branches: [ test, actions ]
+    branches: [test]
   pull_request:
-    branches: [ actions ]
+    branches: [actions]
+  delete:
 
 permissions:
   contents: read
@@ -57,12 +58,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: '2.1.0'
+          poetry-version: "2.1.0"
 
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
@@ -70,7 +71,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '1.13.1'
+          terraform_version: "1.13.1"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -129,3 +130,43 @@ jobs:
             exit 1
           fi
           echo "Rollout succeeded!"
+
+  destroy:
+    name: Terraform Destroy on Feature Branch Delete
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && startsWith(github.event.ref, 'actions')
+    environment:
+      name: destroy-approval
+      # Add required reviewers in your repository settings for this environment
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.1"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Safety check for branch name
+        run: |
+          if [[ "${GITHUB_REF}" != actions/* ]]; then
+            echo "Branch name does not match safety pattern. Skipping destroy."
+            exit 1
+          fi
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve -input=false
