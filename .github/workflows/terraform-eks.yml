@@ -134,7 +134,7 @@ jobs:
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && startsWith(github.event.ref, 'feature/')
+    if: github.event_name == 'delete' && startsWith(github.event.ref, 'feature')
     environment:
       name: destroy-approval
       # Add required reviewers in your repository settings for this environment
