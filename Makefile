@@ -32,7 +32,6 @@ tf-bucket: check-aws
 	@echo "🔍 Checking S3 bucket: $(S3_BUCKET)"
 	@if aws s3api head-bucket --bucket "$(S3_BUCKET)" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
 		echo "✅ Bucket $(S3_BUCKET) already exists."; \
-		exit 1; \
 	else \
 		echo "🚀 Creating bucket $(S3_BUCKET)..."; \
 		if [ "$(AWS_REGION)" = "us-east-1" ]; then \
@@ -41,13 +40,23 @@ tf-bucket: check-aws
 			aws s3api create-bucket --bucket "$(S3_BUCKET)" --region "$(AWS_REGION)" \
 				--create-bucket-configuration LocationConstraint="$(AWS_REGION)"; \
 		fi; \
+		echo "🛡️  Enabling versioning on bucket $(S3_BUCKET)..."; \
+		aws s3api put-bucket-versioning \
+			--bucket "$(S3_BUCKET)" \
+			--versioning-configuration Status=Enabled \
+			--region "$(AWS_REGION)"; \
+		echo "🔐 Enabling server-side encryption on bucket $(S3_BUCKET)..."; \
+		aws s3api put-bucket-encryption \
+			--bucket "$(S3_BUCKET)" \
+			--server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}' \
+			--region "$(AWS_REGION)"; \
+		echo "✅ Bucket $(S3_BUCKET) created with versioning and encryption."; \
 	fi
 
 tf-locks: check-aws
 	@echo "🔍 Checking DynamoDB table: $(DYNAMO_TABLE)"
 	@if aws dynamodb describe-table --table-name "$(DYNAMO_TABLE)" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
 		echo "✅ Table $(DYNAMO_TABLE) already exists."; \
-		exit 0; \
 	else \
 		echo "🚀 Creating table $(DYNAMO_TABLE)..."; \
 		aws dynamodb create-table \
@@ -56,7 +65,18 @@ tf-locks: check-aws
 			--key-schema AttributeName=LockID,KeyType=HASH \
 			--billing-mode PAY_PER_REQUEST \
 			--region "$(AWS_REGION)"; \
+		echo "✅ DynamoDB table $(DYNAMO_TABLE) created."; \
 	fi
+
+tf-clean-lock: check-aws
+	@echo "🧹 Cleaning up stale Terraform lock..."
+	aws s3 cp s3://$(S3_BUCKET)/envs/dev/terraform.tfstate ./terraform.tfstate.backup || echo "No state backup found."
+	aws dynamodb delete-item \
+		--table-name $(DYNAMO_TABLE) \
+		--key '{"LockID": {"S": "envs/dev/terraform.tfstate"}}'
+	@echo "✅ Cleanup complete. Terraform can recreate the lock and state."
+
+
 
 tf-format:
 	cd $(TF_DIR) && terraform fmt
