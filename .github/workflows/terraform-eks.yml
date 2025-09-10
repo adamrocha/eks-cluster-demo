@@ -48,6 +48,9 @@ jobs:
           key: pip-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: pip-${{ runner.os }}-
 
+      - name: Ensure Terraform plugin cache directory exists
+        run: mkdir -p ~/.terraform.d/plugin-cache
+
       - name: Cache Terraform plugins
         uses: actions/cache@v4
         with:
@@ -134,7 +137,7 @@ jobs:
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/')
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && (startsWith(github.event.ref, 'feature/') || startsWith(github.event.ref, 'fix/'))
     environment:
       name: destroy-approval
       # Add required reviewers in your repository settings for this environment
@@ -160,10 +163,10 @@ jobs:
 
       - name: Safety check for branch name
         run: |
-          if [[ "${{ github.event.ref }}" != feature/* ]]; then
+            if [[ ! "${{ github.event.ref }}" =~ ^feature/ ]] && [[ ! "${{ github.event.ref }}" =~ ^fix/ ]]; then
             echo "Branch name does not match safety pattern. Skipping destroy."
             exit 1
-          fi
+            fi
 
       - name: Terraform Init
         run: terraform init
