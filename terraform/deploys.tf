@@ -68,8 +68,8 @@ resource "kubernetes_deployment" "hello_world" {
       type = "RollingUpdate"
 
       rolling_update {
-        max_surge       = "25%"
-        max_unavailable = "25%"
+        max_surge       = 1 # "25%"
+        max_unavailable = 1 # "25%"
       }
     }
 

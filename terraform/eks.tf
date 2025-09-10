@@ -51,8 +51,8 @@ resource "aws_eks_node_group" "node_group" {
   subnet_ids      = aws_subnet.public[*].id
 
   scaling_config {
-    desired_size = 3
     min_size     = 2
+    desired_size = 3
     max_size     = 4
   }
 
@@ -65,4 +65,10 @@ resource "aws_eks_node_group" "node_group" {
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
   ami_type       = "AL2023_ARM_64_STANDARD"
+
+  update_config {
+    max_unavailable = 1
+    # OR
+    # max_unavailable_percentage = 50
+  }
 }
