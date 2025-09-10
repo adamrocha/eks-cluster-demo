@@ -9,6 +9,7 @@ on:
     branches: [test]
   pull_request:
     branches: [actions]
+  delete:
 
 permissions:
   contents: read
@@ -133,7 +134,10 @@ jobs:
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
-    if: github.event.ref_type == 'branch' && startsWith(github.event.ref, 'refs/heads/actions')
+    if: github.event_name == 'delete' && startsWith(github.event.ref, 'actions')
+    environment:
+      name: destroy-approval
+      # Add required reviewers in your repository settings for this environment
     defaults:
       run:
         shell: bash
@@ -153,6 +157,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Safety check for branch name
+        run: |
+          if [[ "${GITHUB_REF}" != actions/* ]]; then
+            echo "Branch name does not match safety pattern. Skipping destroy."
+            exit 1
+          fi
 
       - name: Terraform Init
         run: terraform init
