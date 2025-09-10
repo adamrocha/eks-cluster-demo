@@ -32,6 +32,7 @@ tf-bucket: check-aws
 	@echo "🔍 Checking S3 bucket: $(S3_BUCKET)"
 	@if aws s3api head-bucket --bucket "$(S3_BUCKET)" --region "$(AWS_REGION)" > /dev/null 2>&1; then \
 		echo "✅ Bucket $(S3_BUCKET) already exists."; \
+		exit 0; \
 	else \
 		echo "🚀 Creating bucket $(S3_BUCKET)..."; \
 		if [ "$(AWS_REGION)" = "us-east-1" ]; then \
