@@ -96,7 +96,7 @@ jobs:
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/test' || github.ref == 'refs/heads/dev'
+        if: github.event_name == 'pull_request' && (github.ref_name == 'test' || github.ref_name == 'dev')
         run: terraform apply -auto-approve tfplan
 
   deploy:
