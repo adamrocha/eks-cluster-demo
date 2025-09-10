@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [test]
+    branches: [dev, test, stage]
   pull_request:
-    branches: [actions]
+    branches: [dev, test, stage]
   delete:
 
 permissions:
@@ -96,7 +96,7 @@ jobs:
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/test' || github.ref == 'refs/heads/actions'
+        # if: github.event_name == 'pull_request' && (github.ref_name == 'test' || github.ref_name == 'dev')
         run: terraform apply -auto-approve tfplan
 
   deploy:
@@ -134,7 +134,7 @@ jobs:
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && startsWith(github.event.ref, 'actions')
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/')
     environment:
       name: destroy-approval
       # Add required reviewers in your repository settings for this environment
@@ -160,7 +160,7 @@ jobs:
 
       - name: Safety check for branch name
         run: |
-          if [[ "${GITHUB_REF}" != refs/heads/feature/* ]]; then
+          if [[ "${{ github.event.ref }}" != feature/* ]]; then
             echo "Branch name does not match safety pattern. Skipping destroy."
             exit 1
           fi
