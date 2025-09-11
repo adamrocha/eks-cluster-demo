@@ -114,7 +114,7 @@ jobs:
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && (startsWith(github.event.ref, 'feature/') || startsWith(github.event.ref, 'fix/'))
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && (startsWith(github.event.ref, 'feature/') || startsWith(github.event.ref, 'fix/') || startsWith(github.event.ref, 'chore/'))
     environment:
       name: destroy-approval
       # Add required reviewers in your repository settings for this environment
@@ -137,7 +137,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Safety check for branch name
         run: |
-          if [[ ! "${{ github.event.ref }}" =~ ^feature/ ]] && [[ ! "${{ github.event.ref }}" =~ ^fix/ ]] && [[ ! "${{ github.event.ref }}" =~ ^chore/ ]]; then
+          if [[ ! "${{ github.event.ref }}" =~ ^(feature|fix|chore)/ ]]; then
           echo "Branch name does not match safety pattern. Skipping destroy."
           exit 1
           fi
