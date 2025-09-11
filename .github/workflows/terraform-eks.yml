@@ -1,26 +1,21 @@
 name: EKS Cluster Demo CI
-
 concurrency:
   group: terraform-${{ github.ref_name }}
   cancel-in-progress: true
-
 on:
   push:
     branches: [dev, test, stage]
   pull_request:
     branches: [dev, test, stage]
   delete:
-
 permissions:
   contents: read
-
 env:
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: eks-demo-cluster
   AWS_ACCOUNT_ID: "802645170184"
   REPO: "hello-world-demo"
   IMAGE_TAG: ${{ github.sha }}
-
 jobs:
   terraform-apply:
     if: github.event_name != 'delete'
@@ -33,7 +28,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Cache Poetry
         uses: actions/cache@v4
         with:
@@ -41,68 +35,53 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             poetry-${{ runner.os }}-
-
       - name: Cache Python dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: pip-${{ runner.os }}-
-
       - name: Ensure Terraform plugin cache directory exists
         run: mkdir -p ~/.terraform.d/plugin-cache
-
       - name: Cache Terraform plugins
         uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
           key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
           restore-keys: terraform-${{ runner.os }}-
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: "2.1.0"
-
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.1"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Health check AWS credentials
         run: aws sts get-caller-identity
-
       - name: Terraform Format
         run: terraform fmt -check -recursive
-
       - name: Terraform Init
         run: terraform init
-
       - name: Terraform Validate
         run: terraform validate
-
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan
-
       - name: Terraform Apply
         if: github.event_name != 'delete'
         run: terraform apply -auto-approve tfplan
-
   deploy:
     if: github.event_name != 'delete'
     name: Update Deployment
@@ -111,20 +90,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Update EKS Deployment with New Image
         run: |
           aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
           IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$IMAGE_TAG"
           kubectl set image deployment/hello-world -n hello-world-ns hello-world=$IMAGE_URI
-
       - name: Verify Kubernetes rollout
         run: |
           set -e
@@ -135,7 +111,6 @@ jobs:
             exit 1
           fi
           echo "Rollout succeeded!"
-
   destroy:
     name: Terraform Destroy on Feature Branch Delete
     runs-on: ubuntu-latest
@@ -150,28 +125,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.1"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Safety check for branch name
         run: |
-            if [[ ! "${{ github.event.ref }}" =~ ^feature/ ]] && [[ ! "${{ github.event.ref }}" =~ ^fix/ ]]; then
-            echo "Branch name does not match safety pattern. Skipping destroy."
-            exit 1
-            fi
-
+          if [[ ! "${{ github.event.ref }}" =~ ^feature/ ]] && [[ ! "${{ github.event.ref }}" =~ ^fix/ ]] && [[ ! "${{ github.event.ref }}" =~ ^chore/ ]]; then
+          echo "Branch name does not match safety pattern. Skipping destroy."
+          exit 1
+          fi
       - name: Terraform Init
         run: terraform init
-
       - name: Terraform Destroy
         run: terraform destroy -auto-approve -input=false
