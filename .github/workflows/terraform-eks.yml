@@ -99,7 +99,7 @@ jobs:
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform Apply
-        # if: github.event_name == 'pull_request' && (github.ref_name == 'test' || github.ref_name == 'dev')
+        if: github.event_name != 'delete'
         run: terraform apply -auto-approve tfplan
 
   deploy:
