@@ -113,10 +113,10 @@ jobs:
           echo "Rollout succeeded!"
 
   check_condition:
+    if: github.event_name == 'delete'
     uses: ./.github/workflows/check-destroy-condition.yml
     with:
       branch_prefixes: "feature/,fix/,chore/"
-
   destroy:
     name: Terraform Destroy on Branch Delete
     runs-on: ubuntu-latest
