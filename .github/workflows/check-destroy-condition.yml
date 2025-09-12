@@ -29,7 +29,8 @@ jobs:
 
           # Check for branch deletion and matching prefix
           if [ "${{ github.event_name }}" = "delete" ] && [ "${{ github.event.ref_type }}" = "branch" ]; then
-            for prefix in $(echo "$prefixes" | tr ',' ' '); do
+            IFS=',' read -ra arr <<< "$prefixes"
+            for prefix in "${arr[@]}"; do
               if [[ "${{ github.event.ref }}" == "$prefix"* ]]; then
                 destroy=true
                 break
