@@ -78,7 +78,6 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
       - name: Terraform Apply
-        if: github.event_name != 'delete'
         run: terraform apply -auto-approve tfplan
 
   deploy:
