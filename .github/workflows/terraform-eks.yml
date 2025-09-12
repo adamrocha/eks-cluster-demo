@@ -82,6 +82,7 @@ jobs:
       - name: Terraform Apply
         if: github.event_name != 'delete'
         run: terraform apply -auto-approve tfplan
+
   deploy:
     if: github.event_name != 'delete'
     name: Update Deployment
@@ -110,13 +111,19 @@ jobs:
             exit 1
           fi
           echo "Rollout succeeded!"
+
+  check_condition:
+    uses: ./.github/workflows/check-destroy-condition.yml
+    with:
+      branch_prefixes: "feature/,fix/,chore/"
+
   destroy:
-    name: Terraform Destroy on Feature Branch Delete
+    name: Terraform Destroy on Branch Delete
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && (startsWith(github.event.ref, 'feature/') || startsWith(github.event.ref, 'fix/') || startsWith(github.event.ref, 'chore/'))
+    needs: check_condition
+    if: needs.check_condition.outputs.should_destroy == 'true'
     environment:
       name: destroy-approval
-      # Add required reviewers in your repository settings for this environment
     defaults:
       run:
         shell: bash
@@ -134,12 +141,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      # - name: Safety check for branch name
-      #   run: |
-      #     if [[ ! "${{ github.event.ref }}" =~ ^(feature|fix|chore)/ ]]; then
-      #     echo "Branch name does not match safety pattern. Skipping destroy."
-      #     exit 1
-      #     fi
       - name: Terraform Init
         run: terraform init
       - name: Terraform Destroy
