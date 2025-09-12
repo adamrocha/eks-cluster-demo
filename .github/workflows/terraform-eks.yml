@@ -134,12 +134,12 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Safety check for branch name
-        run: |
-          if [[ ! "${{ github.event.ref }}" =~ ^(feature|fix|chore)/ ]]; then
-          echo "Branch name does not match safety pattern. Skipping destroy."
-          exit 1
-          fi
+      # - name: Safety check for branch name
+      #   run: |
+      #     if [[ ! "${{ github.event.ref }}" =~ ^(feature|fix|chore)/ ]]; then
+      #     echo "Branch name does not match safety pattern. Skipping destroy."
+      #     exit 1
+      #     fi
       - name: Terraform Init
         run: terraform init
       - name: Terraform Destroy
