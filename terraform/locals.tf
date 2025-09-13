@@ -41,7 +41,7 @@ data "external" "image_exists" {
 
 resource "null_resource" "image_build" {
   # count = data.external.image_exists.result.exists == "false" ? 1 : 0
-  count = data.external.image_exists.result.exists ? 1 : 0
+  count = data.external.image_exists.result.exists == "false" ? 1 : 0
 
   provisioner "local-exec" {
     command     = "../scripts/docker-image.sh"
