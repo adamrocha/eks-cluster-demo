@@ -20,12 +20,13 @@ data "external" "image_exists" {
       REPO_NAME="$REPO_NAME"
       IMAGE_TAG="$IMAGE_TAG"
 
-      if aws ecr describe-images \
-          --region \"$REGION\" \
-          --repository-name \"$REPO_NAME\" \
-          --image-ids imageTag=\"$IMAGE_TAG\" \
-          --query \"imageDetails[0].imageTags\" \
-          --output text >/dev/null 2>&1; then
+      IMAGE_COUNT=$(aws ecr describe-images \
+          --region "$REGION" \
+          --repository-name "$REPO_NAME" \
+          --image-ids imageTag="$IMAGE_TAG" \
+          --query "length(imageDetails)" \
+          --output text 2>/dev/null)
+      if [ "$IMAGE_COUNT" -gt 0 ]; then
         echo '{"exists": "true"}'
       else
         echo '{"exists": "false"}'
