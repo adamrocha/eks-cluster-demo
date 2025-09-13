@@ -13,42 +13,73 @@ resource "null_resource" "update_kubeconfig" {
   }
 }
 
+# Ensure the ECR repository exists
+resource "aws_ecr_repository" "repo" {
+  name                 = var.repo_name
+  image_tag_mutability = "IMMUTABLE"
+  force_delete         = true
+
+  encryption_configuration {
+    encryption_type = "KMS"
+  }
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
 data "external" "image_exists" {
+  query = {
+    REGION    = var.region
+    REPO_NAME = var.repo_name
+    IMAGE_TAG = var.image_tag
+  }
   program = [
     "bash", "-c", <<EOT
       REGION="$REGION"
       REPO_NAME="$REPO_NAME"
       IMAGE_TAG="$IMAGE_TAG"
 
-      IMAGE_COUNT=$(aws ecr describe-images \
-          --region "$REGION" \
-          --repository-name "$REPO_NAME" \
-          --image-ids imageTag="$IMAGE_TAG" \
-          --query "length(imageDetails)" \
-          --output text 2>/dev/null)
-      if [ "$IMAGE_COUNT" -gt 0 ]; then
+      if aws ecr describe-images \
+          --region \"$REGION\" \
+          --repository-name \"$REPO_NAME\" \
+          --image-ids imageTag=\"$IMAGE_TAG\" \
+          --query \"imageDetails[0].imageTags\" \
+          --output text >/dev/null 2>&1; then
         echo '{"exists": "true"}'
       else
         echo '{"exists": "false"}'
       fi
     EOT
   ]
-  query = {
-    REGION    = var.region
-    REPO_NAME = var.repo_name
-    IMAGE_TAG = var.image_tag
-  }
 }
 
+# Lookup the image safely
+data "aws_ecr_image" "image" {
+  depends_on      = [
+    aws_eks_cluster.eks,
+    data.external.image_exists
+  ]
+  region          = var.region
+  repository_name = aws_ecr_repository.repo.name
+  image_tag       = var.image_tag
+}
+
+# # Use try() to avoid errors when the image doesn't exist
+# locals {
+#   image_digest = try(data.aws_ecr_image.image.image_digest, "")
+# }
+
+# Build image only if it doesn't exist
 resource "null_resource" "image_build" {
-  count = data.external.image_exists.result.exists == "false" ? 1 : 0
+  depends_on = [aws_ecr_repository.repo]
+  count      = data.external.image_exists.result.exists == "false" ? 1 : 0
 
   provisioner "local-exec" {
     command     = "../scripts/docker-image.sh"
     interpreter = ["bash", "-c"]
   }
 }
-
 
 # resource "null_resource" "cleanup_lb" {
 #   depends_on = [
