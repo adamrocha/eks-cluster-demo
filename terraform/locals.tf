@@ -16,9 +16,9 @@ resource "null_resource" "update_kubeconfig" {
 data "external" "image_exists" {
   program = [
     "bash", "-c", <<EOT
-      REGION=${var.region}
-      REPO_NAME=${var.repo_name}
-      IMAGE_TAG=${var.image_tag}
+      REGION="$REGION"
+      REPO_NAME="$REPO_NAME"
+      IMAGE_TAG="$IMAGE_TAG"
 
       if aws ecr describe-images \
           --region "$REGION" \
@@ -32,10 +32,16 @@ data "external" "image_exists" {
       fi
     EOT
   ]
+  query = {
+    REGION    = var.region
+    REPO_NAME = var.repo_name
+    IMAGE_TAG = var.image_tag
+  }
 }
 
 resource "null_resource" "image_build" {
-  count = data.external.image_exists.result.exists == "false" ? 1 : 0
+  # count = data.external.image_exists.result.exists == "false" ? 1 : 0
+  count = data.external.image_exists.result.exists ? 1 : 0
 
   provisioner "local-exec" {
     command     = "../scripts/docker-image.sh"
