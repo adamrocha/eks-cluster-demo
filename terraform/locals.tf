@@ -21,10 +21,10 @@ data "external" "image_exists" {
       IMAGE_TAG="$IMAGE_TAG"
 
       if aws ecr describe-images \
-          --region "$REGION" \
-          --repository-name "$REPO_NAME" \
-          --image-ids imageTag="$IMAGE_TAG" \
-          --query "imageDetails[0].imageTags" \
+          --region \"$REGION\" \
+          --repository-name \"$REPO_NAME\" \
+          --image-ids imageTag=\"$IMAGE_TAG\" \
+          --query \"imageDetails[0].imageTags\" \
           --output text >/dev/null 2>&1; then
         echo '{"exists": "true"}'
       else
