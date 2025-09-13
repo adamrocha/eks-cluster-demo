@@ -72,9 +72,8 @@ variable "image_tag" {
 
 variable "image_digest" {
   description = "Digest of the Docker image to be used in the deployment"
-  default     = "sha256:9dc736d70b3b5ccc9528e9dbd82c9de90983a517ca651fbb1f640450acdb5c87"
+  default     = ""
   type        = string
-
 }
 
 variable "tf_state_bucket" {
