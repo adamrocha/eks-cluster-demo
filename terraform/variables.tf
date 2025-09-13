@@ -72,7 +72,7 @@ variable "image_tag" {
 
 variable "image_digest" {
   description = "Digest of the Docker image to be used in the deployment"
-  default     = "sha256:f2bf6d4c7470408a1424beee699bfe8642f9f7db4c12a292a89a997677b2a56f"
+  default     = "sha256:9dc736d70b3b5ccc9528e9dbd82c9de90983a517ca651fbb1f640450acdb5c87"
   type        = string
 
 }
