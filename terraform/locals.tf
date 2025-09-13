@@ -13,16 +13,36 @@ resource "null_resource" "update_kubeconfig" {
   }
 }
 
+data "external" "image_exists" {
+  program = [
+    "bash", "-c", <<EOT
+      REGION=${var.region}
+      REPO_NAME=${var.repo_name}
+      IMAGE_TAG=${var.image_tag}
+
+      if aws ecr describe-images \
+          --region "$REGION" \
+          --repository-name "$REPO_NAME" \
+          --image-ids imageTag="$IMAGE_TAG" \
+          --query "imageDetails[0].imageTags" \
+          --output text >/dev/null 2>&1; then
+        echo '{"exists": "true"}'
+      else
+        echo '{"exists": "false"}'
+      fi
+    EOT
+  ]
+}
+
 resource "null_resource" "image_build" {
-  triggers = {
-    always_run = timestamp()
-  }
+  count = data.external.image_exists.result.exists == "false" ? 1 : 0
 
   provisioner "local-exec" {
     command     = "../scripts/docker-image.sh"
     interpreter = ["bash", "-c"]
   }
 }
+
 
 # resource "null_resource" "cleanup_lb" {
 #   depends_on = [
