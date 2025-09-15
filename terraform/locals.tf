@@ -56,7 +56,7 @@ data "external" "image_exists" {
 
 # Lookup the image safely
 data "aws_ecr_image" "image" {
-  depends_on      = [
+  depends_on = [
     aws_eks_cluster.eks,
     data.external.image_exists
   ]
