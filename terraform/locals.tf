@@ -65,10 +65,10 @@ data "aws_ecr_image" "image" {
   image_tag       = var.image_tag
 }
 
-# # Use try() to avoid errors when the image doesn't exist
-# locals {
-#   image_digest = try(data.aws_ecr_image.image.image_digest, "")
-# }
+# Use try() to avoid errors when the image doesn't exist
+locals {
+  image_digest = try(data.aws_ecr_image.image.image_digest, "")
+}
 
 # Build image only if it doesn't exist
 resource "null_resource" "image_build" {
