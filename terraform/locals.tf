@@ -72,7 +72,7 @@ locals {
 
 # Build image only if it doesn't exist
 resource "null_resource" "image_build" {
-  depends_on = [aws_ecr_repository.repo]
+  depends_on = [aws_ecr_repository.repo, data.external.image_exists]
   count      = data.external.image_exists.result.exists == "false" ? 1 : 0
 
   provisioner "local-exec" {
