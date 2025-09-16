@@ -56,19 +56,16 @@ data "external" "image_exists" {
 
 # Lookup the image safely
 data "aws_ecr_image" "image" {
-  depends_on = [
-    aws_eks_cluster.eks,
-    data.external.image_exists
-  ]
+  depends_on      = [aws_eks_cluster.eks]
   region          = var.region
   repository_name = aws_ecr_repository.repo.name
   image_tag       = var.image_tag
 }
 
 # Use try() to avoid errors when the image doesn't exist
-locals {
-  image_digest = try(data.aws_ecr_image.image.image_digest, "")
-}
+# locals {
+#   image_digest = try(data.aws_ecr_image.image.image_digest, "")
+# }
 
 # Build image only if it doesn't exist
 resource "null_resource" "image_build" {
