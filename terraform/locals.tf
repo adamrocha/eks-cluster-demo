@@ -28,23 +28,20 @@ resource "aws_ecr_repository" "repo" {
   }
 }
 
+# Check if the image exists
 data "external" "image_exists" {
-  query = {
-    REGION    = var.region
-    REPO_NAME = var.repo_name
-    IMAGE_TAG = var.image_tag
-  }
+  depends_on = [aws_ecr_repository.repo]
   program = [
     "bash", "-c", <<EOT
-      REGION="$REGION"
-      REPO_NAME="$REPO_NAME"
-      IMAGE_TAG="$IMAGE_TAG"
+      REGION="${var.region}"
+      REPO_NAME="${var.repo_name}"
+      IMAGE_TAG="${var.image_tag}"
 
       if aws ecr describe-images \
-          --region \"$REGION\" \
-          --repository-name \"$REPO_NAME\" \
-          --image-ids imageTag=\"$IMAGE_TAG\" \
-          --query \"imageDetails[0].imageTags\" \
+          --region "$REGION" \
+          --repository-name "$REPO_NAME" \
+          --image-ids imageTag="$IMAGE_TAG" \
+          --query "imageDetails[0].imageTags" \
           --output text >/dev/null 2>&1; then
         echo '{"exists": "true"}'
       else
@@ -54,29 +51,63 @@ data "external" "image_exists" {
   ]
 }
 
-# Lookup the image safely
-data "aws_ecr_image" "image" {
-  depends_on      = [aws_eks_cluster.eks]
-  region          = var.region
-  repository_name = aws_ecr_repository.repo.name
-  image_tag       = var.image_tag
+# Build image only if it doesn't exist
+resource "null_resource" "image_build" {
+  depends_on = [
+    aws_ecr_repository.repo,
+    data.external.image_exists
+  ]
+  # count = data.external.image_exists.result.exists == "false" ? 1 : 0
+
+  provisioner "local-exec" {
+    command     = <<EOT
+      if [ "${data.external.image_exists.result.exists}" = "false" ]; then
+        ../scripts/docker-image.sh
+      else
+        echo "Image already exists, skipping build."
+      fi
+    EOT
+    interpreter = ["bash", "-c"]
+  }
 }
+
+# Get the image digest
+data "external" "image_digest" {
+  depends_on = [null_resource.image_build]
+  program = [
+    "bash", "-c", <<EOT
+      REGION="${var.region}"
+      REPO_NAME="${var.repo_name}"
+      IMAGE_TAG="${var.image_tag}"
+
+      DIGEST=$(aws ecr describe-images \
+        --region "$REGION" \
+        --repository-name "$REPO_NAME" \
+        --image-ids imageTag="$IMAGE_TAG" \
+        --query "imageDetails[0].imageDigest" \
+        --output text)
+
+      echo "{\"digest\": \"$DIGEST\"}"
+    EOT
+  ]
+}
+
+# Lookup the image safely
+# data "aws_ecr_image" "image" {
+#   depends_on = [
+#     aws_eks_cluster.eks,
+#     aws_ecr_repository.repo,
+#     data.external.image_exists
+#   ]
+#   region          = var.region
+#   repository_name = aws_ecr_repository.repo.name
+#   image_tag       = var.image_tag
+# }
 
 # Use try() to avoid errors when the image doesn't exist
 # locals {
 #   image_digest = try(data.aws_ecr_image.image.image_digest, "")
 # }
-
-# Build image only if it doesn't exist
-resource "null_resource" "image_build" {
-  depends_on = [aws_ecr_repository.repo, data.external.image_exists]
-  count      = data.external.image_exists.result.exists == "false" ? 1 : 0
-
-  provisioner "local-exec" {
-    command     = "../scripts/docker-image.sh"
-    interpreter = ["bash", "-c"]
-  }
-}
 
 # resource "null_resource" "cleanup_lb" {
 #   depends_on = [
