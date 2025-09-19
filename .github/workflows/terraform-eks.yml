@@ -71,18 +71,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Check build image
-        run: |
-          set -e
-          if ! aws ecr describe-repositories --repository-names "${{ env.REPO }}" >/dev/null 2>&1; then
-            echo "ECR repository ${{ env.REPO }} does not exist. Please create it first."
-            exit 1
-          fi
-          if ! aws ecr list-images --repository-name "${{ env.REPO }}" --query "imageIds[?imageTag=='${{ env.IMAGE_TAG }}']" --output text | grep -q .; then
-            echo "Image with tag ${{ env.IMAGE_TAG }} does not exist in ECR repository ${{ env.REPO }}. Please build and push the image first."
-            exit 1
-          fi
-          echo "ECR repository and image with tag ${{ env.IMAGE_TAG }} exist."
       - name: Health check AWS credentials
         run: aws sts get-caller-identity
       - name: Terraform Format
