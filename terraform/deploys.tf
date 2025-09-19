@@ -107,7 +107,7 @@ resource "kubernetes_deployment" "hello_world" {
         container {
           name              = var.deployment
           image_pull_policy = "Always"
-          image             = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_name}:${var.image_tag}@${data.aws_ecr_image.image.image_digest}"
+          image             = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_name}:${var.image_tag}@${data.external.image_digest.result["digest"]}"
           # image             = "adamrocha/hello-world-demo:1.2.0"
           # image             = "hashicorp/http-echo:1.0"
           # args              = ["-text=👋 Hello from Kubernetes!"]
