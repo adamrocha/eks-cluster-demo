@@ -7,7 +7,7 @@ resource "aws_s3_bucket" "project_bucket" {
 }
 
 resource "aws_s3_bucket" "project_bucket_replica" {
-  # depends_on = [aws_s3_bucket.project_bucket]
+  depends_on    = [aws_s3_bucket.project_bucket]
   bucket        = "project-bucket-2727-replica"
   force_destroy = true
   tags = {
@@ -16,6 +16,7 @@ resource "aws_s3_bucket" "project_bucket_replica" {
 }
 
 resource "aws_s3_bucket_public_access_block" "project_bucket_public_access_block" {
+  depends_on              = [aws_s3_bucket.project_bucket]
   bucket                  = aws_s3_bucket.project_bucket.id
   block_public_acls       = true
   block_public_policy     = true
@@ -24,6 +25,7 @@ resource "aws_s3_bucket_public_access_block" "project_bucket_public_access_block
 }
 
 resource "aws_s3_bucket_public_access_block" "project_bucket_replica_public_access_block" {
+  depends_on              = [aws_s3_bucket.project_bucket_replica]
   bucket                  = aws_s3_bucket.project_bucket_replica.id
   block_public_acls       = true
   block_public_policy     = true
