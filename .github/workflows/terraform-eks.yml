@@ -72,7 +72,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Health check AWS credentials
-        run: aws sts get-caller-identity
+        run: aws sts get-caller-identity >/dev/null || { echo "Not authenticated with AWS"; exit 1; }
       - name: Terraform Format
         run: terraform fmt -check -recursive
       - name: Terraform Init
