@@ -28,7 +28,7 @@ output "image_digest" {
   value = data.external.image_digest.result["digest"]
 }
 
-# output "image_digets" {
+# output "image_digests" {
 #   description = "ECR Image Digest"
 #   value       = data.aws_ecr_image.image.image_digest
 # }
