@@ -20,13 +20,10 @@ install-tools:
 	@echo "🚀 Running install-tools script..."
 	@/bin/bash ./scripts/install-tools.sh
 
-tf-bootstrap: tf-format tf-init tf-validate tf-plan
+tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
 	@echo "🔄 Running Terraform bootstrap..."
 	@echo "✅ Terraform tasks completed successfully."
 	@echo "🚀 To apply changes, run 'make tf-apply'."
-
-tf-backend: tf-bucket tf-locks
-	@echo "✅ Backend infrastructure ready"
 
 tf-bucket: check-aws
 	@echo "🔍 Checking S3 bucket: $(S3_BUCKET)"

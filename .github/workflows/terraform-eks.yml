@@ -4,9 +4,9 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: [main, stage, dev, test]
+    branches: [main, stage, dev]
   pull_request:
-    branches: [main, stage, dev, test]
+    branches: [main, stage, dev]
   delete:
 permissions:
   contents: read
@@ -15,7 +15,6 @@ env:
   EKS_CLUSTER_NAME: eks-demo-cluster
   AWS_ACCOUNT_ID: "802645170184"
   REPO: "hello-world-demo"
-  PLATFORMS: "linux/amd64,linux/arm64"
   IMAGE_TAG: "1.2.5"
   # IMAGE_TAG: ${{ github.sha }}
 jobs:

@@ -27,15 +27,12 @@ jobs:
           prefixes="${{ inputs.branch_prefixes }}"
           destroy=false
 
-          # Check for branch deletion and matching prefix
+          # Check for branch deletion and not main, stage, or dev
           if [ "${{ github.event_name }}" = "delete" ] && [ "${{ github.event.ref_type }}" = "branch" ]; then
-            IFS=',' read -ra arr <<< "$prefixes"
-            for prefix in "${arr[@]}"; do
-              if [[ "${{ github.event.ref }}" == "$prefix"* ]]; then
-                destroy=true
-                break
-              fi
-            done
+            branch="${{ github.event.ref }}"
+            if [[ "$branch" != "main" && "$branch" != "stage" && "$branch" != "dev" ]]; then
+              destroy=true
+            fi
           fi
 
           echo "destroy=$destroy" >> $GITHUB_OUTPUT
