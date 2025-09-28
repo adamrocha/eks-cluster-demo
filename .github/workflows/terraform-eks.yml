@@ -4,9 +4,9 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: [main, stage, dev, test]
+    branches: [main, stage, dev]
   pull_request:
-    branches: [main, stage, dev, test]
+    branches: [main, stage, dev]
   delete:
 permissions:
   contents: read
