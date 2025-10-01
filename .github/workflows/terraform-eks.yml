@@ -1,22 +1,27 @@
 name: EKS Cluster Demo CI
+
 concurrency:
   group: terraform-${{ github.ref_name }}
   cancel-in-progress: true
+
 on:
   push:
     branches: [main, stage, dev]
   pull_request:
     branches: [main, stage, dev]
   delete:
+
 permissions:
   contents: write
+
 env:
-  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
   EKS_CLUSTER_NAME: eks-demo-cluster
-  AWS_ACCOUNT_ID: "802645170184"
   REPO_NAME: "hello-world-demo"
   IMAGE_TAG: "1.2.5"
   # IMAGE_TAG: ${{ github.sha }}
+
 jobs:
   terraform-apply:
     if: github.event_name != 'delete'
@@ -25,10 +30,11 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: terraform
+        # working-directory: terraform
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Cache Poetry
         uses: actions/cache@v4
         with:
@@ -36,54 +42,66 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             poetry-${{ runner.os }}-
+
       - name: Cache Python dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: pip-${{ runner.os }}-
+
       - name: Ensure Terraform plugin cache directory exists
         run: mkdir -p ~/.terraform.d/plugin-cache
+
       - name: Cache Terraform plugins
         uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
           key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
           restore-keys: terraform-${{ runner.os }}-
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: "2.1.0"
+
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.1"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
       - name: Health check AWS credentials
         run: aws sts get-caller-identity >/dev/null || { echo "Not authenticated with AWS"; exit 1; }
+
       - name: Terraform Format
-        run: terraform fmt -check -recursive
+        run: terraform -chdir=terraform fmt -check -recursive
+
       - name: Terraform Init
-        run: terraform init
+        run: terraform -chdir=terraform init
+
       - name: Terraform Validate
-        run: terraform validate
+        run: terraform -chdir=terraform validate
+
       - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan
+        run: terraform -chdir=terraform plan -input=false -out=tfplan
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
-
-
+        run: terraform -chdir=terraform apply -auto-approve tfplan
 
   check_condition:
     if: github.event_name == 'delete'
@@ -100,7 +118,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: terraform
+        # working-directory: terraform
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,10 +132,12 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
       - name: Terraform Init
-        run: terraform init
+        run: terraform -chdir=terraform init
+
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve -input=false
+        run: terraform -chdir=terraform destroy -auto-approve -input=false
 
   docker-build:
     name: Build and Push Docker Image
@@ -127,8 +147,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - id: 'auth'
-        uses: 'aws-actions/configure-aws-credentials@v4'
+      - id: "auth"
+        uses: "aws-actions/configure-aws-credentials@v4"
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -146,6 +166,7 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
+
       - name: Set up Docker Buildx builder and Build Docker image
         if: steps.image-check.outputs.exists == 'false'
         run: |
@@ -163,16 +184,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
       - name: Update EKS Deployment with New Image
         run: |
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
           kubectl set image deployment/hello-world -n hello-world-ns hello-world=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }}
+
       - name: Verify Kubernetes rollout
         run: |
           set -e
@@ -183,3 +207,12 @@ jobs:
             exit 1
           fi
           echo "Rollout succeeded!"
+
+      - name: Print pod logs on failure
+        if: failure()
+        run: |
+          kubectl get pods -n hello-world-ns
+          for pod in $(kubectl get pods -n hello-world-ns -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod -n hello-world-ns || true
+          done
