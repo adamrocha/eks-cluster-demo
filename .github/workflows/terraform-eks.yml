@@ -141,8 +141,6 @@ jobs:
       - name: Check if image tag exists in Amazon ECR
         id: image-check
         run: |
-          IMAGE_PATH="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }}"
-          IMAGE_TAG="${{ env.IMAGE_TAG }}"
           if aws ecr describe-images --repository-name ${{ env.REPO_NAME }} --image-ids imageTag=${{ env.IMAGE_TAG }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
