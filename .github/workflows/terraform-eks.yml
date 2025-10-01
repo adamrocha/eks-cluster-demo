@@ -175,7 +175,7 @@ jobs:
       - name: Update EKS Deployment with New Image
         run: |
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-          kubectl set image deployment/hello-world -n hello-world-ns hello-world=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/hello-world -n hello-world-ns hello-world=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }}
       - name: Verify Kubernetes rollout
         run: |
           set -e
