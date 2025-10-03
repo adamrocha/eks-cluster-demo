@@ -65,28 +65,8 @@ fi
 # ------------------------------------------------------------
 # Ensure AWS ECR credential helper
 # ------------------------------------------------------------
-# OS_TYPE=$(uname -s)
-# echo "🖥️ Detected OS: $OS_TYPE"
-# if ! command -v docker-credential-ecr-login >/dev/null 2>&1 && [[ "$OS_TYPE" == "Linux" ]]; then
-#     echo "🔧 Installing docker-credential-ecr-login..."
-#     sudo apt-get update -qq
-#     sudo apt-get install -y amazon-ecr-credential-helper
-# elif ! command -v docker-credential-osxkeychain >/dev/null 2>&1 && [[ "$OS_TYPE" == "Darwin" ]]; then
-#     echo "🔧 Installing docker-credential-helper for Mac..."
-#     brew install docker-credential-helper 
-# fi
-
-# # Configure Docker to use the helper for the ECR registry
-# DOCKER_CONFIG_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
-# mkdir -p "$DOCKER_CONFIG_DIR"
-# cat > "$DOCKER_CONFIG_DIR/config.json" <<EOF
-# {
-#   "credHelpers": {
-#     "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com": "ecr-login"
-#   }
-# }
-# EOF
-
+# For instructions on installing and configuring the Docker ECR credential helper, see:
+# https://github.com/awslabs/amazon-ecr-credential-helper or AWS ECR documentation.
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 echo "🔐 Logging Docker in to ECR: $ECR_REGISTRY"
 if ! aws ecr get-login-password --region "$AWS_REGION" \
