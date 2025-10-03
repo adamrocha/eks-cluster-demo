@@ -33,10 +33,10 @@ output "image_digest" {
 #   value       = data.aws_ecr_image.image.image_digest
 # }
 
-output "image_state" {
-  description = "ECR Image State"
-  value       = data.external.image_exists.result.exists
-}
+# output "image_state" {
+#   description = "ECR Image State"
+#   value       = data.external.image_exists.result.exists
+# }
 
 # data "kubernetes_service" "grafana" {
 #   metadata {
