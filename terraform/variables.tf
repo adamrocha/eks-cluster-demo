@@ -66,19 +66,24 @@ variable "repo_name" {
 
 variable "image_tag" {
   description = "Docker image tag"
-  default     = "1.2.2"
+  default     = "1.2.5"
   type        = string
 }
 
 variable "image_digest" {
   description = "Digest of the Docker image to be used in the deployment"
-  default     = "sha256:22d4b00e4ff495d916532184cb93337f7fb875c8b6691cad46bfda93d697327f"
+  default     = ""
   type        = string
-
 }
 
 variable "tf_state_bucket" {
   description = "S3 bucket for Terraform state"
   default     = "terraform-state-bucket-2727"
   type        = string
+}
+
+variable "platforms" {
+  description = "Platforms for Docker buildx"
+  default     = ["linux/amd64", "linux/arm64"]
+  type        = list(string)
 }
