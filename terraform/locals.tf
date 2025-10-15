@@ -68,7 +68,6 @@ resource "null_resource" "image_build" {
       IMAGE_TAG      = var.image_tag
       PLATFORMS      = join(",", var.platforms)
     }
-  # count = data.external.image_exists.result.exists == "false" ? 1 : 0
     command     = <<EOT
       if [ "${data.external.image_exists.result.exists}" = "false" ]; then
         ../scripts/docker-image.sh
