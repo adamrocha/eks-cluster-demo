@@ -3,17 +3,33 @@
 # Supports multi-platform builds, auto-creates repo, installs/updates docker-credential-ecr-login,
 # and checks image existence using docker pull
 
-
 set -euo pipefail
 
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
-AWS_REGION="us-east-1"
-AWS_ACCOUNT_ID="802645170184"
-REPO_NAME="hello-world-demo"
-IMAGE_TAG="${IMAGE_TAG:-1.2.5}"
-PLATFORMS="linux/amd64,linux/arm64"
+# AWS_REGION="us-east-1"
+# AWS_ACCOUNT_ID="802645170184"
+# REPO_NAME="hello-world-demo"
+# IMAGE_TAG="${IMAGE_TAG:-1.2.5}"
+# PLATFORMS="linux/amd64,linux/arm64"
+
+# Function to validate environment variables
+validate_env_var() {
+  local var_name="$1"
+  local var_value="${!var_name}"
+  if [[ -z "${var_value}" ]]; then
+    echo "Warning: ${var_name} is not set."
+  else
+    echo "${var_name} is ${var_value}"
+  fi
+}
+
+validate_env_var "AWS_ACCOUNT_ID"
+validate_env_var "AWS_REGION"
+validate_env_var "REPO_NAME"
+validate_env_var "IMAGE_TAG"
+validate_env_var "PLATFORMS"
 
 export PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
