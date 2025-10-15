@@ -58,7 +58,11 @@ resource "null_resource" "image_build" {
     data.external.image_exists
   ]
   triggers = {
-    image_tag  = var.image_tag
+    image_tag      = var.image_tag
+    aws_account_id = var.aws_account_id
+    region         = var.region
+    repo_name      = var.repo_name
+    platforms      = join(",", var.platforms)
   }
   provisioner "local-exec" {
     environment = {
