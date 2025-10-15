@@ -20,6 +20,7 @@ validate_env_var() {
   local var_value="${!var_name}"
   if [[ -z "${var_value}" ]]; then
     echo "Warning: ${var_name} is not set."
+    exit 1
   else
     echo "${var_name} is ${var_value}"
   fi
