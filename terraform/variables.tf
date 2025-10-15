@@ -81,3 +81,9 @@ variable "tf_state_bucket" {
   default     = "terraform-state-bucket-2727"
   type        = string
 }
+
+variable "platforms" {
+  description = "Platforms for Docker buildx"
+  default     = ["linux/amd64", "linux/arm64"]
+  type        = list(string)
+}

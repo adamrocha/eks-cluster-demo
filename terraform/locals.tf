@@ -57,9 +57,21 @@ resource "null_resource" "image_build" {
     aws_ecr_repository.repo,
     data.external.image_exists
   ]
-  # count = data.external.image_exists.result.exists == "false" ? 1 : 0
-
+  triggers = {
+    image_tag      = var.image_tag
+    aws_account_id = var.aws_account_id
+    region         = var.region
+    repo_name      = var.repo_name
+    platforms      = join(",", var.platforms)
+  }
   provisioner "local-exec" {
+    environment = {
+      AWS_ACCOUNT_ID = var.aws_account_id
+      AWS_REGION     = var.region
+      REPO_NAME      = var.repo_name
+      IMAGE_TAG      = var.image_tag
+      PLATFORMS      = join(",", var.platforms)
+    }
     command     = <<EOT
       if [ "${data.external.image_exists.result.exists}" = "false" ]; then
         ../scripts/docker-image.sh
