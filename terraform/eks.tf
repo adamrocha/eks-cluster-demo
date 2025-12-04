@@ -21,7 +21,7 @@ resource "aws_eks_cluster" "eks" {
     subnet_ids              = aws_subnet.public[*].id
     endpoint_public_access  = true
     endpoint_private_access = true
-    public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
+    # public_access_cidrs     = ["${data.external.my_ip.result.ip}/32"]
   }
 
   enabled_cluster_log_types = [
@@ -50,9 +50,9 @@ resource "aws_eks_node_group" "node_group" {
   subnet_ids      = aws_subnet.public[*].id
 
   scaling_config {
-    desired_size = 3
     min_size     = 2
-    max_size     = 6
+    desired_size = 3
+    max_size     = 4
   }
 
   # instance_types = ["t3.small"]
@@ -64,4 +64,10 @@ resource "aws_eks_node_group" "node_group" {
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
   ami_type       = "AL2023_ARM_64_STANDARD"
+
+  update_config {
+    max_unavailable = 1
+    # OR
+    # max_unavailable_percentage = 50
+  }
 }

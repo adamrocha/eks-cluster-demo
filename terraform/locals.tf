@@ -13,16 +13,113 @@ resource "null_resource" "update_kubeconfig" {
   }
 }
 
-resource "null_resource" "image_build" {
-  triggers = {
-    always_run = timestamp()
+# Ensure the ECR repository exists
+resource "aws_ecr_repository" "repo" {
+  name                 = var.repo_name
+  image_tag_mutability = "IMMUTABLE"
+  force_delete         = true
+
+  encryption_configuration {
+    encryption_type = "KMS"
   }
 
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# Check if the image exists
+data "external" "image_exists" {
+  depends_on = [aws_ecr_repository.repo]
+  program = [
+    "bash", "-c", <<EOT
+      REGION="${var.region}"
+      REPO_NAME="${var.repo_name}"
+      IMAGE_TAG="${var.image_tag}"
+
+      if aws ecr describe-images \
+          --region "$REGION" \
+          --repository-name "$REPO_NAME" \
+          --image-ids imageTag="$IMAGE_TAG" \
+          --query "imageDetails[0].imageTags" \
+          --output text >/dev/null 2>&1; then
+        echo '{"exists": "true"}'
+      else
+        echo '{"exists": "false"}'
+      fi
+    EOT
+  ]
+}
+
+# Build image only if it doesn't exist
+resource "null_resource" "image_build" {
+  depends_on = [
+    aws_ecr_repository.repo,
+    data.external.image_exists
+  ]
+  triggers = {
+    image_tag      = var.image_tag
+    aws_account_id = var.aws_account_id
+    region         = var.region
+    repo_name      = var.repo_name
+    platforms      = join(",", var.platforms)
+  }
   provisioner "local-exec" {
-    command     = "../scripts/docker-image.sh"
+    environment = {
+      AWS_ACCOUNT_ID = var.aws_account_id
+      AWS_REGION     = var.region
+      REPO_NAME      = var.repo_name
+      IMAGE_TAG      = var.image_tag
+      PLATFORMS      = join(",", var.platforms)
+    }
+    command     = <<EOT
+      if [ "${data.external.image_exists.result.exists}" = "false" ]; then
+        ../scripts/docker-image.sh
+      else
+        echo "Image already exists, skipping build."
+      fi
+    EOT
     interpreter = ["bash", "-c"]
   }
 }
+
+# Get the image digest
+data "external" "image_digest" {
+  depends_on = [null_resource.image_build]
+  program = [
+    "bash", "-c", <<EOT
+      REGION="${var.region}"
+      REPO_NAME="${var.repo_name}"
+      IMAGE_TAG="${var.image_tag}"
+
+      DIGEST=$(aws ecr describe-images \
+        --region "$REGION" \
+        --repository-name "$REPO_NAME" \
+        --image-ids imageTag="$IMAGE_TAG" \
+        --query "imageDetails[0].imageDigest" \
+        --output text)
+
+      echo "{\"digest\": \"$DIGEST\"}"
+    EOT
+  ]
+}
+
+# Lookup the image safely
+# data "aws_ecr_image" "image" {
+#   depends_on = [
+#     aws_eks_cluster.eks,
+#     aws_ecr_repository.repo,
+#     data.external.image_exists
+#   ]
+#   region          = var.region
+#   repository_name = aws_ecr_repository.repo.name
+#   image_tag       = var.image_tag
+# }
+
+# Use try() to avoid errors when the image doesn't exist
+# locals {
+#   image_digest = try(data.aws_ecr_image.image.image_digest, "")
+# }
 
 # resource "null_resource" "cleanup_lb" {
 #   depends_on = [
