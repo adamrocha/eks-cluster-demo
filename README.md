@@ -1,4 +1,5 @@
 # eks-cluster-demo
+
 ## Overview
 
 This project provides an example of deploying and managing an Amazon EKS (Elastic Kubernetes Service) cluster using Infrastructure as Code (IaC) tools.
@@ -27,23 +28,27 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 ## Usage
 
 1. **Clone the repository:**
+
 ```sh
 git clone https://github.com/your-org/eks-cluster-demo.git
 cd eks-cluster-demo
 ```
 
 2. **Configure AWS credentials:**
+
 ```sh
 aws configure
 ```
 
 3. **Create the EKS cluster and deploy manifests:**
+
 ```sh
 make tf-bootstrap
 make tf-apply
 ```
 
-5. **Access the cluster:**
+4. **Access the cluster:**
+
 ```sh
 kubectl get nodes
 ```
@@ -59,7 +64,7 @@ kubectl get nodes
 ## Cleanup
 
 To delete the EKS cluster and associated resources:
+
 ```sh
 make tf-destroy
 ```
-
