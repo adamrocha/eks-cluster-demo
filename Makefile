@@ -5,7 +5,46 @@ DYNAMO_TABLE=terraform-locks
 AWS_REGION=us-east-1
 TF_DIR=terraform
 
-.PHONY: check-aws
+.PHONY: check-aws help
+
+.DEFAULT_GOAL := help
+
+help:
+	@echo "📚 EKS Cluster Demo - Available Commands"
+	@echo ""
+	@echo "🔧 Terraform Commands:"
+	@echo "  make tf-bootstrap        - Initialize and validate Terraform"
+	@echo "  make tf-bucket           - Create S3 bucket for state"
+	@echo "  make tf-locks            - Create DynamoDB table for locks"
+	@echo "  make tf-init             - Initialize Terraform"
+	@echo "  make tf-validate         - Validate Terraform configuration"
+	@echo "  make tf-plan             - Preview infrastructure changes"
+	@echo "  make tf-apply            - Apply infrastructure changes"
+	@echo "  make tf-destroy          - Destroy all infrastructure"
+	@echo "  make tf-output           - Display Terraform outputs"
+	@echo "  make tf-state            - List Terraform state"
+	@echo ""
+	@echo "☸️  Kubernetes Manifest Commands:"
+	@echo "  make k8s-validate        - Validate manifests (client-side)"
+	@echo "  make k8s-validate-server - Validate against cluster (server-side)"
+	@echo "  make k8s-apply           - Deploy all manifests"
+	@echo "  make k8s-status          - Check deployment status"
+	@echo "  make k8s-logs            - View application logs"
+	@echo "  make k8s-describe        - Describe deployment"
+	@echo "  make k8s-restart         - Restart deployment"
+	@echo "  make k8s-delete          - Delete all manifests"
+	@echo ""
+	@echo "🎨 Kustomize Commands:"
+	@echo "  make k8s-kustomize-validate - Validate kustomize config"
+	@echo "  make k8s-kustomize-apply    - Deploy with kustomize"
+	@echo "  make k8s-kustomize-diff     - Preview changes"
+	@echo "  make k8s-kustomize-delete   - Delete resources"
+	@echo ""
+	@echo "🛠️  Utility Commands:"
+	@echo "  make install-tools       - Install required tools"
+	@echo "  make check-aws           - Verify AWS credentials"
+	@echo "  make help                - Show this help message"
+	@echo ""
 
 check-aws:
 	@echo "🔍 Checking AWS credentials..."
@@ -164,3 +203,92 @@ nuke_tf_bucket: check-aws
 	else \
 		echo "❎ Aborted."; \
 	fi
+
+# Kubernetes Manifest Deployment Targets
+k8s-validate:
+	@echo "🔍 Validating Kubernetes manifests..."
+	@echo "--- Validating namespace ---"
+	kubectl apply --dry-run=client -f manifests/hello-world-ns.yaml
+	@echo "--- Validating deployment ---"
+	kubectl apply --dry-run=client -f manifests/hello-world-deployment.yaml
+	@echo "--- Validating service ---"
+	kubectl apply --dry-run=client -f manifests/hello-world-service.yaml
+	@echo "✅ All manifests are valid."
+
+k8s-validate-server:
+	@echo "🔍 Validating manifests against cluster (server-side)..."
+	@echo "--- Validating namespace ---"
+	kubectl apply --dry-run=server -f manifests/hello-world-ns.yaml
+	@echo "--- Validating deployment ---"
+	kubectl apply --dry-run=server -f manifests/hello-world-deployment.yaml
+	@echo "--- Validating service ---"
+	kubectl apply --dry-run=server -f manifests/hello-world-service.yaml
+	@echo "✅ All manifests are valid against cluster."
+
+k8s-apply-ns:
+	@echo "🚀 Creating namespace..."
+	kubectl apply -f manifests/hello-world-ns.yaml
+	@echo "✅ Namespace created."
+
+k8s-apply: k8s-apply-ns
+	@echo "🚀 Deploying Kubernetes manifests..."
+	kubectl apply -f manifests/hello-world-deployment.yaml
+	kubectl apply -f manifests/hello-world-service.yaml
+	@echo "✅ Kubernetes resources deployed."
+
+k8s-delete:
+	@echo "🗑️  Deleting Kubernetes manifests..."
+	kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true
+	kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true
+	kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true
+	@echo "✅ Kubernetes resources deleted."
+
+k8s-status:
+	@echo "📊 Checking Kubernetes deployment status..."
+	@echo "--- Namespace ---"
+	kubectl get namespace hello-world-ns 2>/dev/null || echo "Namespace not found"
+	@echo ""
+	@echo "--- Deployments ---"
+	kubectl get deployments -n hello-world-ns 2>/dev/null || echo "No deployments found"
+	@echo ""
+	@echo "--- Pods ---"
+	kubectl get pods -n hello-world-ns 2>/dev/null || echo "No pods found"
+	@echo ""
+	@echo "--- Services ---"
+	kubectl get services -n hello-world-ns 2>/dev/null || echo "No services found"
+	@echo ""
+	@echo "--- LoadBalancer URL ---"
+	@kubectl get service hello-world-service -n hello-world-ns -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null && echo "" || echo "LoadBalancer not ready yet"
+
+k8s-logs:
+	@echo "📜 Fetching logs from hello-world deployment..."
+	kubectl logs -n hello-world-ns -l app=hello-world --tail=100
+
+k8s-describe:
+	@echo "🔍 Describing hello-world deployment..."
+	kubectl describe deployment hello-world -n hello-world-ns
+
+k8s-restart:
+	@echo "🔄 Restarting hello-world deployment..."
+	kubectl rollout restart deployment/hello-world -n hello-world-ns
+	@echo "✅ Deployment restarted."
+
+# Kustomize-based deployment (alternative to direct kubectl apply)
+k8s-kustomize-validate:
+	@echo "🔍 Validating Kustomize configuration..."
+	kubectl apply --dry-run=client -k manifests/
+	@echo "✅ Kustomize configuration is valid."
+
+k8s-kustomize-apply:
+	@echo "🚀 Deploying with Kustomize..."
+	kubectl apply -k manifests/
+	@echo "✅ Kubernetes resources deployed via Kustomize."
+
+k8s-kustomize-delete:
+	@echo "🗑️  Deleting with Kustomize..."
+	kubectl delete -k manifests/ --ignore-not-found=true
+	@echo "✅ Kubernetes resources deleted via Kustomize."
+
+k8s-kustomize-diff:
+	@echo "🔍 Showing diff with Kustomize..."
+	kubectl diff -k manifests/ || true

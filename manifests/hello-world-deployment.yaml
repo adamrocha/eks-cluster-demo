@@ -16,8 +16,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: hello-world
@@ -37,7 +37,8 @@ spec:
           emptyDir: {}
       containers:
         - name: hello-world
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.1@sha256:4282cb9a2f11afbc058a0cbdaf906831630e974aa8da9c0c89d9ffcb127fc4e5
+          # Update this image reference with your ECR image and digest
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.5
           imagePullPolicy: Always
           ports:
             - containerPort: 80
