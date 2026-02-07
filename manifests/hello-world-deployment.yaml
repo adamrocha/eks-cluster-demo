@@ -16,8 +16,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: hello-world
@@ -29,24 +29,33 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
+        runAsUser: 101
       volumes:
         - name: nginx-cache
           emptyDir: {}
         - name: nginx-run
           emptyDir: {}
+        - name: nginx-ssl
+          emptyDir: {}
       containers:
         - name: hello-world
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.2.1@sha256:4282cb9a2f11afbc058a0cbdaf906831630e974aa8da9c0c89d9ffcb127fc4e5
+          # Update this image reference with your ECR image and digest
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.2
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               protocol: TCP
+              name: http
+            - containerPort: 8443
+              protocol: TCP
+              name: https
           volumeMounts:
             - name: nginx-cache
               mountPath: /var/cache/nginx
             - name: nginx-run
               mountPath: /var/run
+            - name: nginx-ssl
+              mountPath: /etc/nginx/ssl
           resources:
             limits:
               cpu: 100m
@@ -55,7 +64,7 @@ spec:
               cpu: 50m
               memory: 32Mi
           securityContext:
-            runAsUser: 10001
+            runAsUser: 101
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

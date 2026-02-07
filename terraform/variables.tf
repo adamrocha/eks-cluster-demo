@@ -46,15 +46,9 @@ variable "deployment" {
   type        = string
 }
 
-variable "aws_account_id" {
-  description = "AWS Account ID"
-  default     = "802645170184"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
-  default     = "t4g.small"
+  default     = "t3.small"
   type        = string
 }
 
@@ -66,13 +60,7 @@ variable "repo_name" {
 
 variable "image_tag" {
   description = "Docker image tag"
-  default     = "1.2.5"
-  type        = string
-}
-
-variable "image_digest" {
-  description = "Digest of the Docker image to be used in the deployment"
-  default     = ""
+  default     = "1.3.2"
   type        = string
 }
 
