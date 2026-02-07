@@ -256,6 +256,8 @@ k8s-delete:
 		kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true; \
 		kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true; \
 		kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true; \
+		echo "⏳ Waiting for resources to be fully deleted..."; \
+		sleep 30; \
 		echo "✅ Kubernetes resources deleted."; \
 	else \
 		echo "❎ Deletion cancelled."; \
