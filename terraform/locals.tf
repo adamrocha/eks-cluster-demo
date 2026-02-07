@@ -40,7 +40,7 @@ resource "docker_image" "hello_world" {
   build {
     context    = "../kube"
     dockerfile = "Dockerfile"
-    platform   = "linux/arm64"
+    platform   = "linux/amd64"
   }
 }
 

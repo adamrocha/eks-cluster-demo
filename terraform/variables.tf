@@ -48,7 +48,7 @@ variable "deployment" {
 
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
-  default     = "t4g.small"
+  default     = "t3.small"
   type        = string
 }
 

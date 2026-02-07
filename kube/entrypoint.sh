@@ -5,10 +5,10 @@ CERT_DIR="/etc/nginx/ssl"
 CERT_FILE="$CERT_DIR/nginx.crt"
 KEY_FILE="$CERT_DIR/nginx.key"
 
-# Create SSL directory if it doesn't exist
+# Create SSL directory
 mkdir -p "$CERT_DIR"
 
-# Generate self-signed certificate if it doesn't exist
+# Generate self-signed certificate
 if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
     echo "Generating self-signed certificate..."
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -20,15 +20,12 @@ if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
         -keyout "$KEY_FILE" \
         -out "$CERT_FILE" \
         -subj "/C=US/ST=State/L=City/O=Organization/OU=Department/CN=hello-world-demo"
-    
     echo "Certificate generated successfully."
-else
-    echo "Certificate already exists."
 fi
 
 # Set proper permissions
-chmod 644 "$CERT_FILE"
-chmod 600 "$KEY_FILE"
+chmod 644 "$CERT_FILE" 2>/dev/null || true
+chmod 600 "$KEY_FILE" 2>/dev/null || true
 
 echo "Starting nginx..."
 exec nginx -g "daemon off;" -c /etc/nginx/nginx.conf
