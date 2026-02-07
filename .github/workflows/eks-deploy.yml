@@ -127,6 +127,12 @@ jobs:
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
 
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f manifests/hello-world-ns.yaml
+          kubectl apply -f manifests/hello-world-deployment.yaml
+          kubectl apply -f manifests/hello-world-service.yaml
+
       - name: Update deployment image
         run: |
           kubectl set image deployment/hello-world \
