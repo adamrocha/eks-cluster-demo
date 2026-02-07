@@ -35,10 +35,12 @@ spec:
           emptyDir: {}
         - name: nginx-run
           emptyDir: {}
+        - name: nginx-ssl
+          emptyDir: {}
       containers:
         - name: hello-world
           # Update this image reference with your ECR image and digest
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.1
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.2
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -52,6 +54,8 @@ spec:
               mountPath: /var/cache/nginx
             - name: nginx-run
               mountPath: /var/run
+            - name: nginx-ssl
+              mountPath: /etc/nginx/ssl
           resources:
             limits:
               cpu: 100m
