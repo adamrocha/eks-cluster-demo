@@ -1,9 +1,7 @@
-FROM nginx:alpine
+FROM nginx:alpine-slim
 
 # Install OpenSSL for certificate generation
-RUN set -ex && \
-    apk update && \
-    apk add --no-cache openssl
+RUN apk add --no-cache openssl
 
 # Create a non-root user and group
 RUN addgroup -S -g 10001 appgroup && \
