@@ -1,5 +1,8 @@
 FROM nginx:alpine
 
+# Install OpenSSL for certificate generation
+RUN apk add --no-cache openssl
+
 # Prepare necessary directories
 RUN mkdir -p /var/cache/nginx /var/run /run /etc/nginx/ssl
 
