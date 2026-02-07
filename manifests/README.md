@@ -113,10 +113,10 @@ image: <account-id>.dkr.ecr.<region>.amazonaws.com/hello-world-demo:<tag>
 
 ```bash
 # Update with image digest (recommended for production)
-./scripts/update-manifest-image.sh hello-world-demo 1.2.5
+./scripts/update-manifest-image.sh hello-world-demo 1.3.0
 
 # Or update without digest
-./scripts/update-manifest-image.sh hello-world-demo 1.2.5 --no-digest
+./scripts/update-manifest-image.sh hello-world-demo 1.3.0 --no-digest
 ```
 
 ## Deployment Configuration

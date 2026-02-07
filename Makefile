@@ -3,6 +3,7 @@ SHELL := /bin/bash
 S3_BUCKET=terraform-state-bucket-2727
 DYNAMO_TABLE=terraform-locks
 AWS_REGION=us-east-1
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
 TF_DIR=terraform
 
 .PHONY: check-aws help
@@ -21,6 +22,7 @@ help:
 	@echo "  make tf-plan             - Preview infrastructure changes"
 	@echo "  make tf-apply            - Apply infrastructure changes"
 	@echo "  make tf-destroy          - Destroy all infrastructure"
+	@echo "  make tf-destroy-clean    - Delete K8s resources, LBs, SGs, then destroy"
 	@echo "  make tf-output           - Display Terraform outputs"
 	@echo "  make tf-state            - List Terraform state"
 	@echo ""
@@ -116,36 +118,45 @@ tf-clean-lock: check-aws
 
 
 tf-format:
-	cd $(TF_DIR) && terraform fmt
+	terraform -chdir=$(TF_DIR) fmt
 	@echo "✅ Terraform files formatted."
 
 tf-init:
-	cd $(TF_DIR) && terraform init
+	terraform -chdir=$(TF_DIR) init
 	@echo "✅ Terraform initialized."
 
 tf-validate:
-	cd $(TF_DIR) && terraform validate
+	terraform -chdir=$(TF_DIR) validate
 	@echo "✅ Terraform configuration validated."
 
 tf-plan:
-	cd $(TF_DIR) && terraform plan
+	terraform -chdir=$(TF_DIR) plan
 	@echo "✅ Terraform plan completed."
 
 tf-apply:
-	cd $(TF_DIR) && terraform apply
+	terraform -chdir=$(TF_DIR) apply
 	@echo "✅ Terraform resources deployed."
 
-tf-destroy:
-	cd $(TF_DIR) && terraform destroy
+tf-destroy: k8s-delete
+	terraform -chdir=$(TF_DIR) destroy 
 	@echo "✅ Terraform resources destroyed."
 
+# tf-destroy-clean: k8s-delete
+# 	@echo "🧹 Cleaning up Load Balancers and Security Groups..."
+# 	@./scripts/cleanup_lb.sh hello-world-ns || true
+# 	@sleep 5
+# 	@./scripts/cleanup_sg.sh || true
+# 	@echo "🚀 Running Terraform destroy..."
+# 	cd $(TF_DIR) && terraform destroy
+# 	@echo "✅ Terraform resources destroyed with cleanup."
+
 tf-output:
-	cd $(TF_DIR) && terraform output
+	terraform -chdir=$(TF_DIR) output
 	@echo "✅ Terraform outputs displayed."
 	@echo "🔍 To view specific output, run 'terraform output <output_name>'."
 
 tf-state:
-	cd $(TF_DIR) && terraform state list
+	terraform -chdir=$(TF_DIR) state list
 	@echo "✅ Terraform state listed."
 	@echo "🔍 To view specific resource, run 'terraform state show <resource_name>'."
 
@@ -237,11 +248,17 @@ k8s-apply: k8s-apply-ns
 	@echo "✅ Kubernetes resources deployed."
 
 k8s-delete:
-	@echo "🗑️  Deleting Kubernetes manifests..."
-	kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true
-	kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true
-	kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true
-	@echo "✅ Kubernetes resources deleted."
+	@echo "⚠️  WARNING: This will delete all Kubernetes resources."
+	@read -p "Are you sure? (y/N): " confirm; \
+	if [ "$$confirm" = "y" ]; then \
+		echo "🗑️  Deleting Kubernetes manifests..."; \
+		kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true; \
+		kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true; \
+		kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true; \
+		echo "✅ Kubernetes resources deleted."; \
+	else \
+		echo "❎ Deletion cancelled."; \
+	fi
 
 k8s-status:
 	@echo "📊 Checking Kubernetes deployment status..."
@@ -263,6 +280,10 @@ k8s-status:
 k8s-logs:
 	@echo "📜 Fetching logs from hello-world deployment..."
 	kubectl logs -n hello-world-ns -l app=hello-world --tail=100
+
+k8s-events:
+	@echo "📜 Fetching events from hello-world namespace..."
+	kubectl get events -n hello-world-ns --sort-by='.metadata.creationTimestamp'
 
 k8s-describe:
 	@echo "🔍 Describing hello-world deployment..."

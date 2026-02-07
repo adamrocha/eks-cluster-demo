@@ -6,7 +6,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST_FILE="$SCRIPT_DIR/../manifests/hello-world-deployment.yaml"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-802645170184}"
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
+OSTYPE="$(uname -s)"
+
 
 usage() {
     cat <<EOF
@@ -16,19 +18,15 @@ Update the Docker image reference in hello-world-deployment.yaml
 
 Arguments:
   repository    ECR repository name (e.g., hello-world-demo)
-  tag           Image tag (e.g., 1.2.5)
+  tag           Image tag (e.g., 1.3.0)
   --no-digest   Skip fetching and adding image digest (optional)
 
 Examples:
   # Update with digest (recommended)
-  $0 hello-world-demo 1.2.5
+  $0 hello-world-demo 1.3.0
 
   # Update without digest
-  $0 hello-world-demo 1.2.5 --no-digest
-
-Environment Variables:
-  AWS_REGION      AWS region (default: us-east-1)
-  AWS_ACCOUNT_ID  AWS account ID (default: 802645170184)
+  $0 hello-world-demo 1.3.0 --no-digest
 EOF
     exit 1
 }

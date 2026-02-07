@@ -18,7 +18,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: eks-demo-cluster
-  AWS_ACCOUNT_ID: "802645170184"
+  AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
   REPO: "hello-world-demo"
   IMAGE_TAG: "1.2.4"
   S3_BUCKET: "my-terraform-state"
