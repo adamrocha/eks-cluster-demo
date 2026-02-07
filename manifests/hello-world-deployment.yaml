@@ -38,7 +38,7 @@ spec:
       containers:
         - name: hello-world
           # Update this image reference with your ECR image and digest
-          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.0
+          image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

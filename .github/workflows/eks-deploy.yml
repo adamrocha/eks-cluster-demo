@@ -19,7 +19,7 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   EKS_CLUSTER_NAME: eks-demo-cluster
   REPO_NAME: hello-world-demo
-  IMAGE_TAG: 1.3.0
+  IMAGE_TAG: 1.3.1
   TERRAFORM_VERSION: 1.13.1
   PYTHON_VERSION: 3.11
 
@@ -142,10 +142,25 @@ jobs:
       - name: Wait for rollout
         run: |
           if ! kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=300s; then
-            echo "::error::Rollout failed, initiating rollback..."
-            kubectl rollout undo deployment/hello-world -n hello-world-ns
-            kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s
-            echo "::error::Rollback complete"
+            echo "::error::Rollout failed!"
+            echo "::group::Pod Status"
+            kubectl get pods -n hello-world-ns -o wide
+            echo "::endgroup::"
+            echo "::group::Recent Events"
+            kubectl get events -n hello-world-ns --sort-by='.metadata.creationTimestamp' | tail -20
+            echo "::endgroup::"
+            echo "::group::Pod Logs"
+            kubectl logs -n hello-world-ns -l app=hello-world --tail=50 --all-containers=true || true
+            echo "::endgroup::"
+            
+            # Only rollback if there's history
+            if kubectl rollout history deployment/hello-world -n hello-world-ns &>/dev/null; then
+              echo "::warning::Initiating rollback..."
+              kubectl rollout undo deployment/hello-world -n hello-world-ns
+              kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s || true
+            else
+              echo "::warning::No rollout history available for rollback"
+            fi
             exit 1
           fi
           echo "::notice::Deployment successful!"
