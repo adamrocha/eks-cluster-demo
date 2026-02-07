@@ -142,39 +142,13 @@ jobs:
       - name: Wait for rollout
         run: |
           if ! kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=300s; then
-            echo "::error::Rollout failed!"
-            echo "::group::Pod Status"
+            echo "::error::Deployment failed"
             kubectl get pods -n hello-world-ns -o wide
-            echo "::endgroup::"
-            echo "::group::Recent Events"
-            kubectl get events -n hello-world-ns --sort-by='.metadata.creationTimestamp' | tail -20
-            echo "::endgroup::"
-            echo "::group::Pod Logs"
-            kubectl logs -n hello-world-ns -l app=hello-world --tail=50 --all-containers=true || true
-            echo "::endgroup::"
+            kubectl logs -n hello-world-ns -l app=hello-world --tail=30 --all-containers=true || true
             
-            # Only rollback if there's history
             if kubectl rollout history deployment/hello-world -n hello-world-ns &>/dev/null; then
-              echo "::warning::Initiating rollback..."
+              echo "Rolling back..."
               kubectl rollout undo deployment/hello-world -n hello-world-ns
-              kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=120s || true
-            else
-              echo "::warning::No rollout history available for rollback"
             fi
             exit 1
           fi
-          echo "::notice::Deployment successful!"
-
-      - name: Show pod status on failure
-        if: failure()
-        run: |
-          echo "::group::Pod Status"
-          kubectl get pods -n hello-world-ns -o wide
-          echo "::endgroup::"
-          
-          echo "::group::Pod Logs"
-          for pod in $(kubectl get pods -n hello-world-ns -o jsonpath='{.items[*].metadata.name}'); do
-            echo "--- Logs for $pod ---"
-            kubectl logs $pod -n hello-world-ns --tail=50 || true
-          done
-          echo "::endgroup::"
