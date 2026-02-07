@@ -4,6 +4,10 @@
 # Ensure you have the AWS CLI installed and configured with the necessary permissions.
 # Usage: ./fetch-billing-total.sh
 
+set -euo pipefail
+
+export AWS_PAGER=""
+
 # Check if AWS CLI is installed
 if ! command -v aws &> /dev/null
 then

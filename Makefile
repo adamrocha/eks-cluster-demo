@@ -32,6 +32,7 @@ help:
 	@echo "  make k8s-apply           - Deploy all manifests"
 	@echo "  make k8s-status          - Check deployment status"
 	@echo "  make k8s-logs            - View application logs"
+	@echo "  make k8s-shell           - Open shell in running container"
 	@echo "  make k8s-describe        - Describe deployment"
 	@echo "  make k8s-restart         - Restart deployment"
 	@echo "  make k8s-delete          - Delete all manifests"
@@ -260,6 +261,11 @@ k8s-delete:
 		echo "❎ Deletion cancelled."; \
 	fi
 
+k8s-undo:
+	@echo "🔄 Undoing last applied Kubernetes manifests..."
+	kubectl rollout undo deployment/hello-world -n hello-world-ns
+	@echo "✅ Undo complete."
+
 k8s-status:
 	@echo "📊 Checking Kubernetes deployment status..."
 	@echo "--- Namespace ---"
@@ -280,6 +286,16 @@ k8s-status:
 k8s-logs:
 	@echo "📜 Fetching logs from hello-world deployment..."
 	kubectl logs -n hello-world-ns -l app=hello-world --tail=100
+
+k8s-shell:
+	@echo "🐚 Opening shell in hello-world container..."
+	@POD=$$(kubectl get pod -n hello-world-ns -l app=hello-world -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
+	if [ -z "$$POD" ]; then \
+		echo "❌ No running pods found in hello-world-ns"; \
+		exit 1; \
+	fi; \
+	echo "📦 Connecting to pod: $$POD"; \
+	kubectl exec -it -n hello-world-ns $$POD -- sh
 
 k8s-events:
 	@echo "📜 Fetching events from hello-world namespace..."
