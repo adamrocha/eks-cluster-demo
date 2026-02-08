@@ -75,7 +75,7 @@ jobs:
     if: github.event_name == 'delete'
     uses: ./.github/workflows/destroy-logic.yml
     with:
-      branch_prefixes: feature/,fix/,chore/
+      branch_prefixes: delete/,nuke/
 
   # Destroy infrastructure on feature branch deletion
   terraform-destroy:

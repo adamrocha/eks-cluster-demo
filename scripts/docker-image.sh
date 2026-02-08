@@ -11,7 +11,7 @@ set -euo pipefail
 # AWS_REGION="us-east-1"
 # AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
 # REPO_NAME="hello-world-demo"
-# IMAGE_TAG="${IMAGE_TAG:-1.3.0}"
+# IMAGE_TAG="${IMAGE_TAG:-1.0.0}"
 # PLATFORMS="linux/amd64,linux/arm64"
 
 # Function to validate environment variables

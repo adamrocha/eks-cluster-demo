@@ -18,15 +18,15 @@ Update the Docker image reference in hello-world-deployment.yaml
 
 Arguments:
   repository    ECR repository name (e.g., hello-world-demo)
-  tag           Image tag (e.g., 1.3.0)
+  tag           Image tag (e.g., 1.0.0)
   --no-digest   Skip fetching and adding image digest (optional)
 
 Examples:
   # Update with digest (recommended)
-  $0 hello-world-demo 1.3.0
+  $0 hello-world-demo 1.0.0
 
   # Update without digest
-  $0 hello-world-demo 1.3.0 --no-digest
+  $0 hello-world-demo 1.0.0 --no-digest
 EOF
     exit 1
 }

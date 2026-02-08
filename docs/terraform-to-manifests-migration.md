@@ -18,7 +18,7 @@ This guide explains how to migrate from Terraform-managed Kubernetes resources t
 2. **`manifests/hello-world-deployment.yaml`** - Updated to match Terraform configuration
 3. **`manifests/hello-world-service.yaml`** - Updated with all annotations from Terraform
 4. **`manifests/kustomization.yaml`** - New file for kustomize support
-5. **`manifests/README.md`** - New documentation
+5. **`docs/kubernetes-deployment-guide.md`** - Deployment documentation
 6. **`scripts/update-manifest-image.sh`** - New helper script
 7. **`Makefile`** - Added k8s-* targets for manifest management
 
@@ -47,10 +47,10 @@ The manifest uses a placeholder image. Update it with your actual ECR image:
 
 ```bash
 # Option 1: Use the helper script (recommended)
-./scripts/update-manifest-image.sh hello-world-demo 1.3.0
+./scripts/update-manifest-image.sh hello-world-demo 1.3.2
 
 # Option 2: Manually edit manifests/hello-world-deployment.yaml
-# Change the image line to your ECR image with digest
+# Change the image line to your ECR image with tag
 ```
 
 ### Step 3: Deploy Using Manifests
@@ -78,6 +78,10 @@ kubectl get svc -n hello-world-ns
 # Get LoadBalancer URL
 kubectl get svc hello-world-service -n hello-world-ns \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Test HTTPS endpoint
+curl -k https://$(kubectl get svc hello-world-service -n hello-world-ns \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
 ### Step 5: Remove from Terraform (Optional)
@@ -124,7 +128,7 @@ image = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_na
 **Manifests:**
 
 ```yaml
-image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.0
+image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.2
 ```
 
 You need to manually update the image or use the helper script.
@@ -253,7 +257,7 @@ kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controll
    - **Helm charts** for better templating
    - **ArgoCD** for GitOps workflows
    - **Kustomize overlays** for multi-environment configs
-   - **CI/CD pipeline** for automated deployments
+   - **CI/CD pipeline** for automated deployments (✅ implemented in GitHub Actions)
    - **ConfigMaps/Secrets** for configuration management
 
 ## Rollback Plan
