@@ -47,7 +47,7 @@ The manifest uses a placeholder image. Update it with your actual ECR image:
 
 ```bash
 # Option 1: Use the helper script (recommended)
-./scripts/update-manifest-image.sh hello-world-demo 1.3.2
+./scripts/update-manifest-image.sh hello-world-demo 1.0.0
 
 # Option 2: Manually edit manifests/hello-world-deployment.yaml
 # Change the image line to your ECR image with tag
@@ -128,7 +128,7 @@ image = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_na
 **Manifests:**
 
 ```yaml
-image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.2
+image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.0.0
 ```
 
 You need to manually update the image or use the helper script.

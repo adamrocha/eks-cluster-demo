@@ -24,7 +24,7 @@ Located in the `manifests/` directory:
 ### Image
 
 - **Repository**: `802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo`
-- **Tag**: `1.3.2`
+- **Tag**: `1.0.0`
 - **Platform**: linux/amd64
 - **Base**: nginx:alpine
 
