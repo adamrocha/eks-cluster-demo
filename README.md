@@ -128,10 +128,12 @@ make k8s-kustomize-delete   # Delete resources
 make help         # Show all available commands
 make check-aws    # Verify AWS credentials
 make install-tools # Install required tools
+```
 
 ### Common Issues
 
 **Pods not starting:**
+
 ```sh
 kubectl describe pod <pod-name> -n hello-world-ns
 kubectl logs <pod-name> -n hello-world-ns
