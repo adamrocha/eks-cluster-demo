@@ -50,14 +50,14 @@ variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
   default     = "t3.small"
   # default     = "t4g.small"
-  type        = string
+  type = string
 }
 
 variable "ami_type" {
   description = "EC2 AMI type for the EKS node group"
   default     = "AL2023_x86_64_STANDARD"
   # default     = "AL2023_ARM_64_STANDARD"
-  type        = string
+  type = string
 }
 
 
