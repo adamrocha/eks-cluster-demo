@@ -154,9 +154,10 @@ make install-tools # Install required tools
 eks-cluster-demo/
 ├── Makefile                    # Build automation and task runner
 ├── README.md                   # This file
-├── MIGRATION.md               # Terraform to manifests migration guide
+├── docs/                      # Documentation
+│   ├── kubernetes-deployment-guide.md          # Kubernetes deployment guide
+│   └── terraform-to-manifests-migration.md     # Migration guide
 ├── manifests/                 # Kubernetes YAML manifests
-│   ├── README.md             # Manifest documentation
 │   ├── kustomization.yaml    # Kustomize configuration
 │   ├── hello-world-ns.yaml
 │   ├── hello-world-deployment.yaml
@@ -182,8 +183,8 @@ eks-cluster-demo/
 
 ## Documentation
 
-- **[manifests/README.md](manifests/README.md)** - Detailed Kubernetes manifest documentation
-- **[MIGRATION.md](MIGRATION.md)** - Guide for migrating from Terraform to manifests
+- **[docs/kubernetes-deployment-guide.md](docs/kubernetes-deployment-guide.md)** - Detailed Kubernetes deployment documentation
+- **[docs/terraform-to-manifests-migration.md](docs/terraform-to-manifests-migration.md)** - Guide for migrating from Terraform to manifests
 - **Makefile** - Run `make help` to see all available commands
 
 ## Security Features

@@ -75,7 +75,7 @@ jobs:
     if: github.event_name == 'delete'
     uses: ./.github/workflows/destroy-logic.yml
     with:
-      branch_prefixes: feature/,fix/,chore/
+      branch_prefixes: delete/,nuke/
 
   # Destroy infrastructure on feature branch deletion
   terraform-destroy:
@@ -103,6 +103,17 @@ jobs:
 
       - name: Terraform Init
         run: terraform -chdir=terraform init
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }} || true
+
+      - name: Delete Kubernetes resources
+        run: |
+          kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true || true
+          kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true || true
+          kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true || true
+          echo "Waiting for resources to be deleted..."
+          sleep 30
 
       - name: Terraform Destroy
         run: terraform -chdir=terraform destroy -auto-approve

@@ -12,7 +12,6 @@ resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
     aws_vpc.eks
-    # null_resource.cleanup_sg
   ]
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
@@ -55,19 +54,12 @@ resource "aws_eks_node_group" "node_group" {
     max_size     = 4
   }
 
-  # instance_types = ["t3.small"]
-  # capacity_type  = "ON_DEMAND"
-  # disk_size      = 20
-  # ami_type       = "AL2023_x86_64_STANDARD"
-
   instance_types = [var.instance_type]
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
-  ami_type       = "AL2023_x86_64_STANDARD"
+  ami_type       = var.ami_type
 
   update_config {
-    max_unavailable = 1
-    # OR
-    # max_unavailable_percentage = 50
+    max_unavailable = 1 # max_unavailable_percentage = 25
   }
 }
