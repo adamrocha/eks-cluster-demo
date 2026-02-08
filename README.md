@@ -19,12 +19,13 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 ## Prerequisites
 
 - AWS account with appropriate permissions
+- [Github Actions](https://github.com/features/actions) (optional)
 - [Terraform](https://www.terraform.io/) (v1.0+)
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) (configured with credentials)
 - [Docker](https://docs.docker.com/engine/install/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [jq](https://stedolan.github.io/jq/) (for script operations)
-- [helm](https://helm.sh/) (optional, for Prometheus stack)
+- [helm](https://helm.sh/) (optional, for Prometheus, Grafana, and Vault stacks)
 - [eksctl](https://eksctl.io/) (optional)
 
 ## Usage
@@ -125,8 +126,8 @@ make k8s-kustomize-delete   # Delete resources
 ### Utility Commands
 
 ```sh
-make help         # Show all available commands
-make check-aws    # Verify AWS credentials
+make help          # Show all available commands
+make check-aws     # Verify AWS credentials
 make install-tools # Install required tools
 ```
 
@@ -145,42 +146,72 @@ kubectl logs <pod-name> -n hello-world-ns
 kubectl describe service hello-world-service -n hello-world-ns
 # Check AWS Load Balancer Controller logs
 kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
-make help         # Show all available commands
-make check-aws    # Verify AWS credentials
-make install-tools # Install required tools
 ```
 
 ## Project Structure
 
 ```text
 eks-cluster-demo/
-├── Makefile                    # Build automation and task runner
-├── README.md                   # This file
-├── docs/                      # Documentation
+├── .github/                                    # GitHub Actions workflows
+│   └── workflows/
+│       ├── eks-deploy.yml                      # CI/CD deployment pipeline
+│       └── destroy-logic.yml                   # Infrastructure teardown
+├── docs/                                       # Documentation
 │   ├── kubernetes-deployment-guide.md          # Kubernetes deployment guide
 │   └── terraform-to-manifests-migration.md     # Migration guide
-├── manifests/                 # Kubernetes YAML manifests
-│   ├── kustomization.yaml    # Kustomize configuration
-│   ├── hello-world-ns.yaml
-│   ├── hello-world-deployment.yaml
-│   └── hello-world-service.yaml
-├── scripts/                   # Helper scripts
-│   ├── update-manifest-image.sh  # Update Docker image in manifests
-│   ├── update-kubeconfig.sh      # Configure kubectl access
-│   ├── cleanup_lb.sh             # Clean up load balancers
-│   ├── cleanup_sg.sh             # Clean up security groups
-│   └── docker-image.sh           # Build and push Docker images
-├── terraform/                 # Infrastructure as Code
-│   ├── backend.tf            # Terraform state backend
-│   ├── eks.tf                # EKS cluster configuration
-│   ├── iam.tf                # IAM roles and policies
-│   ├── vpc.tf                # VPC and networking
-│   ├── monitoring.tf         # CloudWatch and logging
-│   └── variables.tf          # Variable definitions
-└── kube/                      # Docker build context
-    ├── Dockerfile
-    ├── index.html
-    └── nginx.conf
+├── files/                                      # Configuration files
+│   ├── lb-controller-policy.json               # AWS Load Balancer Controller IAM policy
+│   ├── requirements.txt                        # Python dependencies
+│   └── test-terraform-eks.yml                  # Test configuration
+├── kube/                                       # Docker build context
+│   ├── Dockerfile                              # Container image definition
+│   ├── entrypoint.sh                           # Container startup script (TLS cert generation)
+│   ├── index.html                              # Application HTML
+│   └── nginx.conf                              # Nginx configuration (HTTP + HTTPS)
+├── manifests/                                  # Kubernetes YAML manifests
+│   ├── hello-world-ns.yaml                     # Namespace definition
+│   ├── hello-world-deployment.yaml             # Deployment with security hardening
+│   ├── hello-world-service.yaml                # LoadBalancer service
+│   └── kustomization.yaml                      # Kustomize configuration
+├── scripts/                                    # Automation scripts
+│   ├── cleanup_lb.sh                           # Clean up load balancers
+│   ├── cleanup_sg.sh                           # Clean up security groups
+│   ├── docker-image.sh                         # Build and push Docker images
+│   ├── fetch-billing-total.py                  # AWS billing report (Python)
+│   ├── fetch-billing-total.sh                  # AWS billing report (Shell)
+│   ├── fetch-ec2-instances.sh                  # List EC2 instances
+│   ├── fetch-ip.py                             # Get LoadBalancer IP (Python)
+│   ├── fetch-ip.sh                             # Get LoadBalancer IP (Shell)
+│   ├── fetch-ssm-instances.sh                  # List SSM-managed instances
+│   ├── fwd-services.sh                         # Port forwarding for services
+│   ├── install-tools.sh                        # Install required tools
+│   ├── oidc-provider-url.sh                    # Get OIDC provider URL
+│   ├── setup-tfstate-bucket.py                 # Setup Terraform state bucket (Python)
+│   ├── setup-tfstate-bucket.sh                 # Setup Terraform state bucket (Shell)
+│   ├── start-ec2-instances.sh                  # Start stopped EC2 instances
+│   ├── stop-ec2-instances.sh                   # Stop running EC2 instances
+│   ├── update-kubeconfig.py                    # Update kubectl config (Python)
+│   ├── update-kubeconfig.sh                    # Update kubectl config (Shell)
+│   └── update-manifest-image.sh                # Update Docker image in manifests
+├── terraform/                                  # Infrastructure as Code
+│   ├── backend.tf                              # S3 backend configuration
+│   ├── buckets.tf                              # S3 buckets for storage
+│   ├── eks.tf                                  # EKS cluster configuration
+│   ├── iam.tf                                  # IAM roles and policies
+│   ├── keys.tf                                 # KMS encryption keys
+│   ├── locals.tf                               # Local variables and Docker build
+│   ├── outputs.tf                              # Output values
+│   ├── providers.tf                            # AWS, Kubernetes, Docker providers
+│   ├── variables.tf                            # Input variables
+│   ├── versions.tf                             # Provider version constraints
+│   ├── vpc.tf                                  # VPC and networking
+│   └── vault.tf                                # HashiCorp Vault (optional)
+├── .envrc                                      # direnv environment variables
+├── .gitignore                                  # Git ignore patterns
+├── Makefile                                    # Build automation and task runner
+├── pyproject.toml                              # Python project configuration
+├── poetry.lock                                 # Poetry dependency lock file
+└── README.md                                   # This file
 ```
 
 ## Documentation
@@ -196,8 +227,8 @@ eks-cluster-demo/
 - **KMS encryption** - For EKS secrets, S3 buckets, and CloudWatch logs
 - **VPC Flow Logs** - Network traffic monitoring
 - **Image scanning** - Automated ECR image vulnerability scanning
-- **Read-only root filesystem** - Container security hardening
-- **Non-root user** - Containers run as UID 10001
+- **Read-only root filesystem** - Container security hardening (Temporarily disabled for development)
+- **Non-root user** - Containers run as UID 10001 (Temporarily disabled for development)
 - **Security contexts** - Drop all capabilities, seccomp profiles
 
 ## Monitoring and Logging
