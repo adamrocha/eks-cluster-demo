@@ -49,43 +49,115 @@ resource "aws_iam_role_policy_attachment" "eks_worker_node_policy_amazon_ssm_man
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# resource "aws_iam_role_policy" "eks_elb_access_policy" {
-#   name = "eks_elb_access_policy"
-#   role = aws_iam_role.eks_cluster.name
+# Allow EKS nodes to manage load balancers (created by LoadBalancer services)
+resource "aws_iam_role_policy" "eks_nodes_elb_access_policy" {
+  name = "eks-nodes-elb-access-policy"
+  role = aws_iam_role.eks_nodes.name
 
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "elasticloadbalancing:DescribeLoadBalancers",
-#           "elasticloadbalancing:DescribeTargetHealth",
-#           "elasticloadbalancing:DescribeTargetGroups",
-#           "elasticloadbalancing:DescribeListeners",
-#           "elasticloadbalancing:RegisterTargets",
-#           "elasticloadbalancing:DeregisterTargets",
-#           "elasticloadbalancing:CreateLoadBalancer",
-#           "elasticloadbalancing:DeleteLoadBalancer",
-#           "elasticloadbalancing:CreateListener",
-#           "elasticloadbalancing:DeleteListener",
-#           "elasticloadbalancing:ModifyListener",
-#           "elasticloadbalancing:AddTags",
-#           "elasticloadbalancing:RemoveTags",
-#           "elasticloadbalancing:CreateTargetGroup",
-#           "elasticloadbalancing:ModifyTargetGroup",
-#           "elasticloadbalancing:DeleteTargetGroup"
-#           # "elasticloadbalancing:*"
-#         ]
-#         Resource = [
-#           "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:loadbalancer/app/*",
-#           "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:targetgroup/*/*",
-#           "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener/app/*/*"
-#         ]
-#       }
-#     ]
-#   })
-# }
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid    = "ELBReadOnlyAccess"
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeTargetHealth",
+          "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:DescribeTags"
+        ]
+        # Resource must be "*" - AWS does not support resource-level permissions for ELB Describe actions
+        # Reference: https://docs.aws.amazon.com/service-authorization/latest/reference/list_elasticloadbalancingv2.html
+        Resource = "*"
+      },
+      {
+        Sid    = "ELBWriteAccess"
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:RegisterTargets",
+          "elasticloadbalancing:DeregisterTargets",
+          "elasticloadbalancing:CreateLoadBalancer",
+          "elasticloadbalancing:DeleteLoadBalancer",
+          "elasticloadbalancing:CreateListener",
+          "elasticloadbalancing:DeleteListener",
+          "elasticloadbalancing:ModifyListener",
+          "elasticloadbalancing:ModifyLoadBalancerAttributes",
+          "elasticloadbalancing:AddTags",
+          "elasticloadbalancing:RemoveTags",
+          "elasticloadbalancing:CreateTargetGroup",
+          "elasticloadbalancing:ModifyTargetGroup",
+          "elasticloadbalancing:ModifyTargetGroupAttributes",
+          "elasticloadbalancing:DeleteTargetGroup"
+        ]
+        Resource = [
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:loadbalancer/net/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:loadbalancer/app/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:targetgroup/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener/net/*/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener/app/*/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener-rule/net/*/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener-rule/app/*/*/*"
+        ]
+      },
+      {
+        Sid    = "EC2ReadOnlyAccess"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeInstances",
+          "ec2:DescribeAccountAttributes",
+          "ec2:DescribeInternetGateways"
+        ]
+        # Resource must be "*" - AWS does not support resource-level permissions for EC2 Describe actions
+        # Reference: https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonec2.html
+        Resource = "*"
+      },
+      {
+        Sid    = "EC2SecurityGroupManagement"
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateSecurityGroup",
+          "ec2:DeleteSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupEgress"
+        ]
+        Resource = [
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:security-group/*",
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:vpc/${aws_vpc.eks.id}"
+        ]
+        Condition = {
+          StringEquals = {
+            "ec2:Vpc" = "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:vpc/${aws_vpc.eks.id}"
+          }
+        }
+      },
+      {
+        Sid    = "EC2TaggingForLBResources"
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateTags",
+          "ec2:DeleteTags"
+        ]
+        Resource = [
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:security-group/*",
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:network-interface/*"
+        ]
+        Condition = {
+          StringEquals = {
+            # Restrict to resources in the EKS VPC only
+            "ec2:Vpc" = "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:vpc/${aws_vpc.eks.id}"
+          }
+        }
+      }
+    ]
+  })
+}
 
 resource "aws_iam_role" "vpc_flow_log" {
   name = "eks-vpc-flow-log-role"
@@ -206,46 +278,94 @@ resource "aws_iam_role" "ec2_ssm_s3_role" {
   })
 }
 
-resource "aws_iam_role_policy" "ec2_ssm_s3_inline" {
-  name = "ssm-and-s3-access-policy"
-  role = aws_iam_role.ec2_ssm_s3_role.id
+# resource "aws_iam_role_policy" "ec2_ssm_s3_inline" {
+#   name = "ssm-and-s3-access-policy"
+#   role = aws_iam_role.ec2_ssm_s3_role.id
 
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid    = "AllowSSMAndMessages",
-        Effect = "Allow",
-        Action = [
-          "ssm:*",
-          "ssmmessages:*",
-          "ec2messages:*"
-        ],
-        Resource = ["arn:aws:ec2:*:*:instance/*"]
-      },
-      {
-        Sid    = "AllowS3Access",
-        Effect = "Allow",
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
-        ],
-        Resource = [
-          "arn:aws:s3:::project-bucket-2727",
-          "arn:aws:s3:::project-bucket-2727/*"
-        ]
-      },
-      {
-        Sid    = "AllowCloudWatchLogs",
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = ["arn:aws:logs:*:*:log-group:/aws/ssm/*"]
-      }
-    ]
-  })
-}
+#   policy = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [
+#       {
+#         Sid    = "AllowSSMCoreActions"
+#         Effect = "Allow"
+#         Action = [
+#           "ssm:UpdateInstanceInformation",
+#           "ssm:ListAssociations",
+#           "ssm:ListInstanceAssociations"
+#         ]
+#         # Resource must be "*" - AWS does not support resource-level permissions for these SSM actions
+#         # Reference: https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssystemsmanager.html
+#         Resource = "*"
+#       },
+#       {
+#         Sid    = "AllowSSMSessionManager"
+#         Effect = "Allow"
+#         Action = [
+#           "ssmmessages:CreateControlChannel",
+#           "ssmmessages:CreateDataChannel",
+#           "ssmmessages:OpenControlChannel",
+#           "ssmmessages:OpenDataChannel"
+#         ]
+#         # Resource must be "*" - Required for SSM Session Manager
+#         # Reference: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html
+#         Resource = "*"
+#       },
+#       {
+#         Sid    = "AllowEC2Messages"
+#         Effect = "Allow"
+#         Action = [
+#           "ec2messages:AcknowledgeMessage",
+#           "ec2messages:DeleteMessage",
+#           "ec2messages:FailMessage",
+#           "ec2messages:GetEndpoint",
+#           "ec2messages:GetMessages",
+#           "ec2messages:SendReply"
+#         ]
+#         # Resource must be "*" - Required for SSM Agent communication
+#         # Reference: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+#         Resource = "*"
+#       },
+#       {
+#         Sid    = "AllowS3Access"
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetObject",
+#           "s3:PutObject"
+#         ]
+#         Resource = "arn:aws:s3:::project-bucket-2727/ssm-logs/*"
+#       },
+#       {
+#         Sid    = "AllowS3ListBucket"
+#         Effect = "Allow"
+#         Action = [
+#           "s3:ListBucket"
+#         ]
+#         Resource = "arn:aws:s3:::project-bucket-2727"
+#         Condition = {
+#           StringLike = {
+#             "s3:prefix" = "ssm-logs/*"
+#           }
+#         }
+#       },
+#       {
+#         Sid    = "AllowCloudWatchLogsWrite"
+#         Effect = "Allow"
+#         Action = [
+#           "logs:CreateLogStream",
+#           "logs:PutLogEvents"
+#         ]
+#         # Scoped to specific log group and any log stream within it
+#         # Note: Log group /aws/ssm/session-logs should be pre-created via Terraform
+#         Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ssm/session-logs:*"
+#       },
+#       {
+#         Sid    = "AllowCloudWatchLogsRead"
+#         Effect = "Allow"
+#         Action = [
+#           "logs:DescribeLogStreams"
+#         ]
+#         Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ssm/session-logs"
+#       }
+#     ]
+#   })
+# }
