@@ -25,10 +25,10 @@ commonAnnotations:
 #     # Or use newName to change registry:
 #     # newName: newregistry.io/hello-world-demo
 
-# Example: Override replicas
-# replicas:
-#   - name: hello-world
-#     count: 5
+  Test: Override replicas
+replicas:
+  - name: hello-world
+    count: 5
 
 # Example: Add config map generator
 # configMapGenerator:
