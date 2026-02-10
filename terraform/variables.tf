@@ -74,7 +74,7 @@ variable "platform" {
   description = "Platform for Docker build"
   default     = "linux/amd64"
   # default     = "linux/arm64"
-  type        = string
+  type = string
 }
 
 variable "instance_type" {
