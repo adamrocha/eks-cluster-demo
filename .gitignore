@@ -36,6 +36,12 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Ignore lock files
 .terraform.lock.hcl
 
+# Ignore macOS system files
 .DS_Store*
+
+# Ignore Python virtual environment directories
+venv/
+.venv/

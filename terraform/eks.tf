@@ -14,6 +14,7 @@ resource "aws_eks_cluster" "eks" {
     aws_vpc.eks
   ]
   name     = var.cluster_name
+  version  = var.kubernetes_version
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
@@ -45,6 +46,7 @@ resource "aws_eks_node_group" "node_group" {
   ]
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
+  version         = var.kubernetes_version
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = aws_subnet.public[*].id
 
