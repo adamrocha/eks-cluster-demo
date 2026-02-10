@@ -12,11 +12,26 @@ resource "helm_release" "prometheus" {
   name             = "prometheus"
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
-  version          = "76.4.0"
+  version          = "81.5.0"
   namespace        = var.monitoring_ns
   create_namespace = true
   timeout          = 600
   skip_crds        = false
   wait             = true
   replace          = true
+}
+
+# CloudWatch Log Group for SSM Session Manager logs
+# Required by ec2_ssm_s3_role policy which restricts logs:CreateLogStream to this specific group
+resource "aws_cloudwatch_log_group" "ssm_session_logs" {
+  name              = "/aws/ssm/session-logs"
+  retention_in_days = 30
+
+  kms_key_id = aws_kms_key.cloudwatch_logs.arn
+
+  tags = {
+    Name        = "SSM Session Logs"
+    ManagedBy   = "Terraform"
+    Environment = "production"
+  }
 }
