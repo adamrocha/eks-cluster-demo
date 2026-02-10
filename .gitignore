@@ -44,3 +44,4 @@ terraform.rc
 
 # Ignore Python virtual environment directories
 venv/
+.venv/
