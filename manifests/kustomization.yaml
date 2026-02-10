@@ -26,8 +26,3 @@ commonAnnotations:
 replicas:
 - count: 4
   name: hello-world
-labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: hello-world
