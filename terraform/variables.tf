@@ -10,6 +10,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "kubernetes_version" {
+  description = "Kubernetes version for the EKS cluster"
+  default     = "1.35"
+  type        = string
+}
+
 variable "node_group_name" {
   description = "Name of the EKS node group"
   default     = "eks-demo-node-group"
