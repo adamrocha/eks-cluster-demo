@@ -46,7 +46,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Verify AWS credentials
-        run: aws sts get-caller-identity
+        run: aws sts get-caller-identity > /dev/null
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4
