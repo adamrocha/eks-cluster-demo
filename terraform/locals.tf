@@ -26,29 +26,54 @@ resource "aws_ecr_repository" "repo" {
   }
 }
 
-provider "docker" {
-  registry_auth {
-    address  = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
-    username = "AWS"
-    password = data.aws_ecr_authorization_token.token.password
+# resource "docker_image" "hello_world" {
+#   name = "${aws_ecr_repository.repo.repository_url}:${var.image_tag}"
+
+#   build {
+#     context    = "../kube"
+#     dockerfile = "Dockerfile"
+#     # platforms = var.platforms
+#     platform = var.platform
+#   }
+# }
+
+# resource "docker_registry_image" "hello_world" {
+#   name = docker_image.hello_world.name
+# }
+
+# Multi-architecture build using docker buildx
+resource "terraform_data" "docker_buildx" {
+  depends_on = [aws_ecr_repository.repo]
+
+  triggers_replace = {
+    image_tag  = var.image_tag
+    platforms  = join(",", var.platforms)
+    dockerfile = filemd5("../kube/Dockerfile")
   }
-}
 
-resource "docker_image" "hello_world" {
-  name = "${aws_ecr_repository.repo.repository_url}:${var.image_tag}"
-
-  build {
-    context    = "../kube"
-    dockerfile = "Dockerfile"
-    # platforms = var.platforms
-    platform = var.platform
+  provisioner "local-exec" {
+    command     = <<-EOT
+      set -e
+      echo "🔨 Building multi-architecture image..."
+      
+      # Login to ECR
+      aws ecr get-login-password --region ${var.region} | \
+        docker login --username AWS --password-stdin ${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com
+      
+      # Create buildx builder if not exists
+      docker buildx create --use --name multiarch-builder 2>/dev/null || docker buildx use multiarch-builder
+      
+      # Build and push multi-arch image
+      docker buildx build \
+        --platform ${join(",", var.platforms)} \
+        --tag ${aws_ecr_repository.repo.repository_url}:${var.image_tag} \
+        --push \
+        ../kube/
+      
+      echo "✅ Multi-arch image pushed successfully"
+    EOT
+    interpreter = ["bash", "-c"]
   }
-}
-
-resource "docker_registry_image" "hello_world" {
-  name = docker_image.hello_world.name
-
-  keep_remotely = false
 }
 
 # Lookup the image safely
@@ -56,8 +81,9 @@ data "aws_ecr_image" "image" {
   depends_on = [
     aws_eks_cluster.eks,
     aws_ecr_repository.repo,
-    docker_image.hello_world,
-    docker_registry_image.hello_world
+    terraform_data.docker_buildx
+    # docker_image.hello_world,
+    # docker_registry_image.hello_world
   ]
   region          = var.region
   repository_name = aws_ecr_repository.repo.name
