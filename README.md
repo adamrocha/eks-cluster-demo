@@ -8,6 +8,7 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 
 - **Automated EKS cluster provisioning** with Terraform
 - **Kubernetes manifest-based deployments** for applications
+- **Blue/Green deployment pattern** for zero-downtime releases
 - **Security-hardened IAM policies** with least-privilege access
 - **Kustomize support** for environment-specific configurations
 - **Validation tools** for manifests before deployment
@@ -148,6 +149,55 @@ kubectl describe service hello-world-service -n hello-world-ns
 kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
 ```
 
+## Deployment Strategies
+
+This project supports multiple deployment strategies to fit different use cases:
+
+### 1. Rolling Update (Default)
+
+Located in `manifests/` directory. Best for:
+
+- Development environments
+- Simple updates with backward compatibility
+- Resource-constrained environments
+
+```sh
+make k8s-apply          # Deploy with rolling updates
+make k8s-restart        # Restart deployment
+```
+
+### 2. Blue/Green Deployment
+
+Located in `manifests/blue-green/` directory. Best for:
+
+- Production environments
+- Zero-downtime deployments
+- Quick rollback capability
+- Major version changes
+
+```sh
+# Deploy blue/green infrastructure
+make bg-deploy
+
+# Check status
+make bg-status
+
+# Switch to new version (green)
+make bg-switch-green
+
+# Instant rollback if needed
+make bg-rollback
+```
+
+**Key Benefits:**
+
+- **Zero Downtime** - Traffic switches instantly between versions
+- **Fast Rollback** - Revert to previous version in seconds
+- **Full Testing** - Test new version before exposing to users
+- **Reduced Risk** - Both versions run simultaneously
+
+See [docs/blue-green-deployment.md](docs/blue-green-deployment.md) for detailed guide.
+
 ## Project Structure
 
 ```text
@@ -158,7 +208,9 @@ eks-cluster-demo/
 │       └── destroy-logic.yml                   # Infrastructure teardown
 ├── docs/                                       # Documentation
 │   ├── kubernetes-deployment-guide.md          # Kubernetes deployment guide
-│   └── terraform-to-manifests-migration.md     # Migration guide
+│   ├── terraform-to-manifests-migration.md     # Migration guide
+│   ├── blue-green-deployment.md                # Blue/Green deployment guide
+│   └── blue-green-quick-reference.md           # Blue/Green quick reference
 ├── files/                                      # Configuration files
 │   ├── lb-controller-policy.json               # AWS Load Balancer Controller IAM policy
 │   ├── requirements.txt                        # Python dependencies
@@ -172,8 +224,15 @@ eks-cluster-demo/
 │   ├── hello-world-ns.yaml                     # Namespace definition
 │   ├── hello-world-deployment.yaml             # Deployment with security hardening
 │   ├── hello-world-service.yaml                # LoadBalancer service
-│   └── kustomization.yaml                      # Kustomize configuration
+│   ├── kustomization.yaml                      # Kustomize configuration
+│   └── blue-green/                             # Blue/Green deployment manifests
+│       ├── hello-world-ns.yaml                 # Namespace for blue/green
+│       ├── hello-world-deployment-blue.yaml    # Blue deployment
+│       ├── hello-world-deployment-green.yaml   # Green deployment
+│       ├── hello-world-service.yaml            # Service with version selector
+│       └── kustomization.yaml                  # Kustomize for blue/green
 ├── scripts/                                    # Automation scripts
+│   ├── blue-green-switch.sh                    # Blue/Green deployment switcher
 │   ├── cleanup_lb.sh                           # Clean up load balancers
 │   ├── cleanup_sg.sh                           # Clean up security groups
 │   ├── docker-image.sh                         # Build and push Docker images
@@ -218,6 +277,8 @@ eks-cluster-demo/
 
 - **[docs/kubernetes-deployment-guide.md](docs/kubernetes-deployment-guide.md)** - Detailed Kubernetes deployment documentation
 - **[docs/terraform-to-manifests-migration.md](docs/terraform-to-manifests-migration.md)** - Guide for migrating from Terraform to manifests
+- **[docs/blue-green-deployment.md](docs/blue-green-deployment.md)** - Blue/Green deployment pattern guide
+- **[docs/blue-green-quick-reference.md](docs/blue-green-quick-reference.md)** - Quick reference for blue/green deployments
 - **Makefile** - Run `make help` to see all available commands
 
 ## Security Features
@@ -246,6 +307,7 @@ eks-cluster-demo/
 aws ecr describe-images --repository-name hello-world-demo --region us-east-1
 # Check node IAM permissions
 kubectl describe node | grep InstanceProfile
+
 ```
 
 **Terraform state lock issues:**
