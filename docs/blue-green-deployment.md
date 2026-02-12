@@ -1,175 +1,25 @@
 # Blue/Green Deployment Guide
 
-## Overview
+Two identical production environments where only one serves live traffic. Switch by changing service selector - instant rollback, zero downtime.
 
-This guide explains how to use the blue/green deployment pattern for the hello-world application in Kubernetes. Blue/green deployment is a release strategy that reduces downtime and risk by running two identical production environments (blue and green), with only one serving live traffic at any time.
+## Components
 
-## Architecture
+- **Blue** (`hello-world-blue`) - Current stable version
+- **Green** (`hello-world-green`) - New version for testing  
+- **Service** - Routes traffic via `version` selector label
 
-### Components
+Files: `manifests/blue-green/`
 
-1. **Blue Deployment** (`hello-world-blue`)
-   - Runs the current stable version
-   - Always ready to receive traffic
-   - Located: `manifests/blue-green/hello-world-deployment-blue.yaml`
+## Workflow
 
-2. **Green Deployment** (`hello-world-green`)
-   - Runs the new version to be tested
-   - Deployed alongside blue
-   - Located: `manifests/blue-green/hello-world-deployment-green.yaml`
+1. Update green deployment image → `kubectl apply -f manifests/blue-green/hello-world-deployment-green.yaml`
+2. Wait for ready → `kubectl rollout status deployment/hello-world-green -n hello-world-ns`
+3. Test green → `kubectl port-forward -n hello-world-ns deployment/hello-world-green 8080:8080`
+4. Switch traffic → `./scripts/blue-green-switch.sh green`
+5. Monitor logs → `kubectl logs -n hello-world-ns -l version=green -f`
+6. Rollback if needed → `./scripts/blue-green-switch.sh rollback`
 
-3. **Service** (`hello-world-service`)
-   - Routes traffic to either blue or green deployment
-   - Controlled by `version` selector label
-   - Located: `manifests/blue-green/hello-world-service.yaml`
-
-### How It Works
-
-```text
-                     ┌─────────────────┐
-                     │  Load Balancer  │
-                     └────────┬────────┘
-                              │
-                     ┌────────▼────────┐
-                     │    Service      │
-                     │ (version: blue) │
-                     └────────┬────────┘
-                              │
-              ┌───────────────┴───────────────┐
-              │                               │
-    ┌─────────▼─────────┐         ┌─────────▼─────────┐
-    │  Blue Deployment  │         │ Green Deployment  │
-    │   (Active)        │         │   (Standby)       │
-    │   v1.3.2          │         │   v1.4.0          │
-    └───────────────────┘         └───────────────────┘
-         3 Replicas                    3 Replicas
-```
-
-When switching, only the service selector changes - no pods are restarted.
-
-## Deployment Workflow
-
-### Initial Setup
-
-1. **Deploy the Blue environment** (current version):
-
-```bash
-kubectl apply -f manifests/blue-green/hello-world-deployment-blue.yaml
-kubectl apply -f manifests/blue-green/hello-world-service.yaml
-```
-
-1. **Verify Blue is running**:
-
-```bash
-kubectl get pods -n hello-world-ns -l version=blue
-kubectl get svc -n hello-world-ns hello-world-service
-```
-
-### Deploying a New Version
-
-1. **Update the Green deployment** with the new image version:
-
-```bash
-# Edit manifests/blue-green/hello-world-deployment-green.yaml
-# Update the image tag to the new version
-```
-
-1. **Deploy Green environment**:
-
-```bash
-kubectl apply -f manifests/blue-green/hello-world-deployment-green.yaml
-```
-
-1. **Wait for Green to be ready**:
-
-```bash
-kubectl rollout status deployment/hello-world-green -n hello-world-ns
-```
-
-1. **Test the Green deployment** (before switching traffic):
-
-```bash
-# Port-forward to test directly
-kubectl port-forward -n hello-world-ns deployment/hello-world-green 8080:8080
-
-# Or create a temporary test service
-kubectl expose deployment hello-world-green -n hello-world-ns \
-  --name=hello-world-green-test --type=LoadBalancer --port=80 --target-port=8080
-```
-
-1. **Switch traffic to Green**:
-
-```bash
-./scripts/blue-green-switch.sh green
-```
-
-1. **Monitor and validate** the Green deployment in production:
-
-```bash
-# Check service endpoints
-kubectl get endpoints -n hello-world-ns hello-world-service
-
-# Monitor logs
-kubectl logs -n hello-world-ns -l version=green --tail=100 -f
-
-# Check metrics/monitoring dashboard
-```
-
-1. **Rollback if needed**:
-
-```bash
-./scripts/blue-green-switch.sh rollback
-```
-
-1. **Once Green is stable**, update Blue for the next deployment cycle:
-
-```bash
-# Update blue deployment to match green
-kubectl apply -f manifests/blue-green/hello-world-deployment-blue.yaml
-```
-
-## Using the Switch Script
-
-The `blue-green-switch.sh` script provides an easy way to manage blue/green deployments.
-
-### Commands
-
-```bash
-# Show current status
-./scripts/blue-green-switch.sh status
-
-# Switch to blue deployment
-./scripts/blue-green-switch.sh blue
-
-# Switch to green deployment
-./scripts/blue-green-switch.sh green
-
-# Rollback to previous version
-./scripts/blue-green-switch.sh rollback
-```
-
-### Example Output
-
-```text
-$ ./scripts/blue-green-switch.sh status
-
-=== Blue/Green Deployment Status ===
-
-Current Active Version: blue
-
-Blue Deployment:  READY
-Green Deployment: READY
-
-=== Pod Status ===
-
-NAME                                READY   STATUS    VERSION
-hello-world-blue-7d4f8c9b5d-abc12   1/1     Running   blue
-hello-world-blue-7d4f8c9b5d-def34   1/1     Running   blue
-hello-world-blue-7d4f8c9b5d-ghi56   1/1     Running   blue
-hello-world-green-8e5f9d0c6e-xyz78  1/1     Running   green
-hello-world-green-8e5f9d0c6e-uvw90  1/1     Running   green
-hello-world-green-8e5f9d0c6e-rst12  1/1     Running   green
-```
+**Commands:** `./scripts/blue-green-switch.sh {status|blue|green|rollback}`
 
 ## Best Practices
 
@@ -286,48 +136,12 @@ kubectl patch service hello-world-service -n hello-world-ns \
 ### Example GitHub Actions Workflow
 
 ```yaml
-name: Blue/Green Deploy
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: us-east-1
-      
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-      
-      - name: Build and push image
-        run: |
-          docker build -t $ECR_REGISTRY/hello-world-demo:${{ github.ref_name }} .
-          docker push $ECR_REGISTRY/hello-world-demo:${{ github.ref_name }}
-      
-      - name: Update green deployment
-        run: |
-          sed -i 's|image: .*|image: $ECR_REGISTRY/hello-world-demo:${{ github.ref_name }}|' \
-            manifests/blue-green/hello-world-deployment-green.yaml
-          kubectl apply -f manifests/blue-green/hello-world-deployment-green.yaml
-      
-      - name: Wait for green to be ready
-        run: |
-          kubectl rollout status deployment/hello-world-green -n hello-world-ns --timeout=5m
-      
-      - name: Run smoke tests
-        run: |
-          # Add your smoke tests here
-          ./scripts/smoke-test.sh green
-      
+- **Pre-deploy:** Verify image in ECR, ensure DB migrations backward-compatible
+- **Test first:** Always test green before switching (port-forward, smoke tests)
+- **Monitor:** Alert on pod crashes, errors, latency, resource issues
+- **Rollback window:** Set decision window (e.g., 1 hour), rollback at first sign of issues
+- **Keep synced:** After 24-48h stability, update blue to match green
+- **Never delete inactive:** Keep for instant rollback capability
       - name: Switch to green (manual approval recommended)
         run: |
           ./scripts/blue-green-switch.sh green
@@ -367,33 +181,15 @@ VERSION=$1
 DEPLOYMENT="hello-world-${VERSION}"
 
 # Check deployment is ready
-READY=$(kubectl get deployment $DEPLOYMENT -n hello-world-ns -o jsonpath='{.status.readyReplicas}')
-DESIRED=$(kubectl get deployment $DEPLOYMENT -n hello-world-ns -o jsonpath='{.spec.replicas}')
+**Safe:** Add tables/columns (nullable), add indexes, expand columns  
+**Unsafe:** Remove/rename columns, change types, remove tables
 
-if [ "$READY" != "$DESIRED" ]; then
-  echo "Deployment not ready: $READY/$DESIRED"
-  exit 1
-fi
-
-# Port-forward and test endpoint
-kubectl port-forward -n hello-world-ns deployment/$DEPLOYMENT 9090:8080 &
-PF_PID=$!
-sleep 2
-
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/)
-kill $PF_PID
-
-if [ "$HTTP_CODE" != "200" ]; then
-  echo "Health check failed: HTTP $HTTP_CODE"
-  exit 1
-fi
-
-echo "Health check passed"
-exit 0
-```
-
-## References
-
-- [Kubernetes Deployment Strategies](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
-- [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+**Multi-phase strategy:** Add new column (keep old) → Deploy green writing to both → Switch → Update blue →WS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
 - [Blue/Green Deployment Pattern](https://martinfowler.com/bliki/BlueGreenDeployment.html)
+**Pods not starting:** `kubectl describe pod -n hello-world-ns -l version=green | grep Events`  
+**Wrong routing:** `kubectl get svc hello-world-service -n hello-world-ns -o yaml | grep -A2 selector`  
+**Manual rollback:** `kubectl patch svc hello-world-service -n hello-world-ns -p '{"spec":{"selector":{"version":"blue"}}}'`
+
+## Cost Optimization
+
+Requires 2x resources. **Reduce:** Scale inactive to 1 replica, use spot instances, reserve for production only
