@@ -11,7 +11,8 @@ data "external" "my_ip" {
 resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
-    aws_vpc.eks
+    aws_vpc.eks,
+    aws_kms_key.eks_secrets
   ]
   name     = var.cluster_name
   version  = var.kubernetes_version
@@ -41,7 +42,8 @@ resource "aws_eks_cluster" "eks" {
 }
 
 resource "aws_eks_node_group" "node_group" {
-  depends_on = [aws_eks_cluster.eks,
+  depends_on = [
+    aws_eks_cluster.eks,
     aws_internet_gateway.eks
   ]
   cluster_name    = aws_eks_cluster.eks.name

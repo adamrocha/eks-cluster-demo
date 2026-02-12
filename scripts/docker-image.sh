@@ -105,10 +105,10 @@ if ! docker buildx version &> /dev/null; then
 fi
 
 # Ensure buildx builder exists
-if ! docker buildx inspect mybuilder >/dev/null 2>&1; then
-  docker buildx create --name mybuilder --driver docker-container --use
+if ! docker buildx inspect multiarch-builder >/dev/null 2>&1; then
+  docker buildx create --use --name multiarch-builder 2>/dev/null || docker buildx use multiarch-builder
 else
-  docker buildx use mybuilder
+  docker buildx use multiarch-builder
 fi
 
 # ------------------------------------------------------------
