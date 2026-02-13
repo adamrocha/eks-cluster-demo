@@ -43,7 +43,15 @@ help:
 	@echo "  make k8s-kustomize-diff     - Preview changes"
 	@echo "  make k8s-kustomize-delete   - Delete resources"
 	@echo ""
-	@echo "🛠️  Utility Commands:"
+	@echo "�🟢 Blue/Green Deployment Commands:"
+	@echo "  make bg-deploy           - Deploy blue/green infrastructure"
+	@echo "  make bg-status           - Show blue/green status"
+	@echo "  make bg-switch-blue      - Switch traffic to blue"
+	@echo "  make bg-switch-green     - Switch traffic to green"
+	@echo "  make bg-rollback         - Rollback to previous version"
+	@echo "  make bg-cleanup          - Delete blue/green resources"
+	@echo ""
+	@echo "�🛠️  Utility Commands:"
 	@echo "  make install-tools       - Install required tools"
 	@echo "  make check-aws           - Verify AWS credentials"
 	@echo "  make help                - Show this help message"
@@ -331,3 +339,59 @@ k8s-kustomize-delete:
 k8s-kustomize-diff:
 	@echo "🔍 Showing diff with Kustomize..."
 	kubectl diff -k manifests/ || true
+# Blue/Green Deployment Commands
+bg-deploy:
+	@echo "🔵🟢 Deploying Blue/Green infrastructure..."
+	kubectl apply -k manifests/blue-green/
+	@echo ""
+	@echo "✅ Blue/Green deployment created. Both blue and green environments are now running."
+	@echo "📊 Use 'make bg-status' to check the status"
+
+bg-status:
+	@echo "🔵🟢 Blue/Green Deployment Status"
+	@./scripts/blue-green-switch.sh status
+
+bg-switch-blue:
+	@echo "🔵 Switching traffic to BLUE deployment..."
+	@./scripts/blue-green-switch.sh blue
+
+bg-switch-green:
+	@echo "🟢 Switching traffic to GREEN deployment..."
+	@./scripts/blue-green-switch.sh green
+
+bg-rollback:
+	@echo "⏮️  Rolling back to previous deployment..."
+	@./scripts/blue-green-switch.sh rollback
+
+bg-cleanup:
+	@echo "🗑️  Deleting Blue/Green deployment resources..."
+	kubectl delete -k manifests/blue-green/ --ignore-not-found=true
+	@echo "✅ Blue/Green resources deleted."
+
+bg-test-blue:
+	@echo "🔵 Testing Blue deployment..."
+	@POD=$$(kubectl get pod -n hello-world-ns -l version=blue -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
+	if [ -z "$$POD" ]; then \
+		echo "❌ No blue pods found"; \
+		exit 1; \
+	fi; \
+	echo "Port-forwarding to blue deployment on localhost:8080..."; \
+	kubectl port-forward -n hello-world-ns $$POD 8080:8080
+
+bg-test-green:
+	@echo "🟢 Testing Green deployment..."
+	@POD=$$(kubectl get pod -n hello-world-ns -l version=green -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
+	if [ -z "$$POD" ]; then \
+		echo "❌ No green pods found"; \
+		exit 1; \
+	fi; \
+	echo "Port-forwarding to green deployment on localhost:8081..."; \
+	kubectl port-forward -n hello-world-ns $$POD 8081:8080
+
+bg-logs-blue:
+	@echo "📜 Fetching logs from BLUE deployment..."
+	kubectl logs -n hello-world-ns -l version=blue --tail=100 -f
+
+bg-logs-green:
+	@echo "📜 Fetching logs from GREEN deployment..."
+	kubectl logs -n hello-world-ns -l version=green --tail=100 -f

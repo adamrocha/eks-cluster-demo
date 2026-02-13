@@ -1,53 +1,19 @@
 # Kubernetes Deployment Guide
 
-This guide covers deploying the hello-world application to your EKS cluster using Kubernetes manifests.
+Deploy hello-world app to EKS using manifests in `manifests/`.
 
 ## Prerequisites
 
-1. **AWS CLI** configured with appropriate credentials
-2. **kubectl** installed (v1.28+)
-3. **EKS cluster** provisioned via Terraform
-4. **kubeconfig** updated to point to your cluster
-5. **Docker image** built and pushed to ECR
+AWS CLI, kubectl (v1.28+), EKS cluster via Terraform, kubeconfig updated, Docker image in ECR
 
-## Manifest Files
+## Configuration
 
-Located in the `manifests/` directory:
-
-- **`hello-world-ns.yaml`** - Namespace definition
-- **`hello-world-deployment.yaml`** - 3-replica deployment with security hardening
-- **`hello-world-service.yaml`** - Network Load Balancer service
-- **`kustomization.yaml`** - Kustomize configuration (optional)
-
-## Current Configuration
-
-### Image
-
-- **Repository**: `802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo`
-- **Tag**: `1.0.0`
-- **Platform**: linux/amd64
-- **Base**: nginx:alpine
-
-### Security Features
-
-- Non-root user (UID 101)
-- Read-only root filesystem
-- Writable volumes for cache, run, and SSL
-- Dropped ALL capabilities
-- No privilege escalation
-- Runtime default seccomp profile
-
-### Ports & TLS
-
-- **HTTP**: 8080 (container) → 80 (load balancer)
-- **HTTPS**: 8443 (container) → 443 (load balancer)
-- **TLS**: Self-signed certificates generated at runtime
-
-### Resources
-
-- **CPU**: 100m limit, 50m request
-- **Memory**: 64Mi limit, 32Mi request
-- **Replicas**: 3 with rolling update strategy
+**Image:** `802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.0.0` (nginx:alpine)  
+**Security:** Non-root (UID 101), read-only root FS, dropped capabilities, no privilege escalation  
+**Ports:** HTTP 8080→80, HTTPS 8443→443 (self-signed TLS)  
+**Resources:** CPU 50m-100m, Memory 32Mi-64Mi  
+**Replicas:** 3 (rolling update)  
+**Health:** Liveness/readiness on `/` port 8080
 
 ## Quick Start
 
@@ -81,67 +47,24 @@ make k8s-delete
 ```bash
 # Apply manifests in order
 kubectl apply -f manifests/hello-world-ns.yaml
-kubectl apply -f manifests/hello-world-deployment.yaml
-kubectl apply -f manifests/hello-world-service.yaml
-
-# Check status
-kubectl get all -n hello-world-ns
-
-# Get LoadBalancer URL
-kubectl get service hello-world-service -n hello-world-ns \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-
-# Delete resources (reverse order)
-kubectl delete -f manifests/hello-world-service.yaml
-kubectl delete -f manifests/hello-world-deployment.yaml
-kubectl delete -f manifests/hello-world-ns.yaml
-```
-
-### Using Kustomize
-
 ```bash
-# Validate
-make k8s-kustomize-validate
+# Validate & deploy
+make k8s-validate
+make k8s-apply
 
-# Deploy
-make k8s-kustomize-apply
+# Check status & get LB URL
+make k8s-status
 
-# View diff
-make k8s-kustomize-diff
+# View logs, shell, restart
+make k8s-logs
+make k8s-shell
+make k8s-restart
 
 # Delete
-make k8s-kustomize-delete
+make k8s-delete
 ```
 
-## Validating Manifests
-
-### Client-Side Validation
-
-Validates syntax and schema without connecting to cluster:
-
-```bash
-# Validate all manifests
-make k8s-validate
-
-# Or individually
-kubectl apply --dry-run=client -f manifests/hello-world-deployment.yaml
-```
-
-### Server-Side Validation
-
-Validates against actual cluster API (includes admission controllers):
-
-```bash
-# Validate against cluster
-make k8s-validate-server
-
-# Or individually
-kubectl apply --dry-run=server -f manifests/hello-world-deployment.yaml
-```
-
-## Updating the Docker Image
-
-The image is built via Terraform. To deploy a new version:
+**Kustomize:** `make k8s-kustomize-{validate|apply|delete|diff}e image is built via Terraform. To deploy a new version:
 
 ```bash
 # Update image tag in terraform/variables.tf
@@ -156,133 +79,19 @@ vi manifests/hello-world-deployment.yaml
 kubectl apply -f manifests/hello-world-deployment.yaml
 
 # Or use kubectl set image
-kubectl set image deployment/hello-world \
-  -n hello-world-ns \
+kubUpdates & Rollback
+
+**Update image:**
+```bash
+kubectl set image deployment/hello-world -n hello-world-ns \
   hello-world=802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.3
 ```
 
-## Deployment Details
-
-### Rolling Update Strategy
-
-```yaml
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 1
-    maxUnavailable: 1
-```
-
-### Health Checks
-
-- **Liveness**: HTTP GET / on port 8080 (10s delay, 10s period)
-- **Readiness**: HTTP GET / on port 8080 (5s delay, 5s period)
-
-### Volumes
-
-- `nginx-cache` → `/var/cache/nginx` (emptyDir)
-- `nginx-run` → `/var/run` (emptyDir)
-- `nginx-ssl` → `/etc/nginx/ssl` (emptyDir, for runtime TLS cert generation)
-
-### Service Configuration
-
-```yaml
-type: LoadBalancer
-annotations:
-  service.beta.kubernetes.io/aws-load-balancer-type: nlb
-  service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-  service.beta.kubernetes.io/aws-load-balancer-target-type: ip
-```
-
-## Monitoring & Debugging
-
-### View Deployment Status
+**Rollback:**
 
 ```bash
-# Watch pods
-kubectl get pods -n hello-world-ns -w
-
-# Deployment status
-kubectl rollout status deployment/hello-world -n hello-world-ns
-
-# Describe deployment
-make k8s-describe
-```
-
-### View Logs
-
-```bash
-# Recent logs
-make k8s-logs
-
-# Follow logs
-kubectl logs -f -n hello-world-ns -l app=hello-world
-
-# Specific pod
-kubectl logs -n hello-world-ns <pod-name>
-```
-
-### View Events
-
-```bash
-# Recent events
-make k8s-events
-
-# Or directly
-kubectl get events -n hello-world-ns --sort-by='.metadata.creationTimestamp'
-```
-
-### Shell Access
-
-```bash
-# Open shell in container
-make k8s-shell
-
-# Or directly
-kubectl exec -it -n hello-world-ns <pod-name> -- sh
-```
-
-## Troubleshooting
-
-### Pods CrashLoopBackOff
-
-```bash
-# Check pod events
-kubectl describe pod <pod-name> -n hello-world-ns
-
-# View logs
-kubectl logs <pod-name> -n hello-world-ns
-
-# Previous container logs (if restarted)
-kubectl logs <pod-name> -n hello-world-ns --previous
-```
-
-### Image Pull Errors
-
-```bash
-# Verify image exists in ECR
-aws ecr describe-images \
-  --repository-name hello-world-demo \
-  --region us-east-1
-
-# Check node IAM permissions
-kubectl describe node | grep InstanceProfile
-
-# View pod events
-kubectl describe pod <pod-name> -n hello-world-ns
-```
-
-### LoadBalancer Not Provisioning
-
-```bash
-# Check service events
-kubectl describe service hello-world-service -n hello-world-ns
-
-# Verify NLB created in AWS
-aws elbv2 describe-load-balancers --region us-east-1 | grep hello-world
-```
-
-### Certificate Issues
+make k8s-undo
+# Or: kubectl rollout undo deployment/hello-world -n hello-world-ns [--to-revision=2]
 
 Certificates are generated at container startup by `/usr/local/bin/entrypoint.sh`:
 
@@ -370,3 +179,20 @@ For production environments, consider using GitOps tools:
 - [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
 - [Kustomize](https://kustomize.io/)
 - [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+
+## Troubleshooting
+
+**CrashLoopBackOff:** `kubectl describe pod <pod> -n hello-world-ns` → `kubectl logs <pod> -n hello-world-ns [--previous]`  
+**Image pull errors:** Check ECR image exists, verify node IAM permissions  
+**LB not provisioning:** `kubectl describe svc hello-world-service -n hello-world-ns`  
+**Cert issues:** Certs auto-generated by entrypoint.sh - check with `kubectl exec -n hello-world-ns <pod> -- ls -la /etc/nginx/ssl/`  
+**Performance:** `kubectl top pods -n hello-world-ns`
+
+## Key Reminders
+
+- Validate before applying (`make k8s-validate-server`)
+- Use image digests in production (pin SHA256)
+- Monitor rollout status, keep resource limits
+- Use health checks, enable TLS
+- Review security contexts (least-privilege)
+- Version control manifests
