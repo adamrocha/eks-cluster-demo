@@ -30,7 +30,7 @@ resource "aws_ecr_repository" "repo" {
 #   name = "${aws_ecr_repository.repo.repository_url}:${var.image_tag}"
 
 #   build {
-#     context    = "../kube"
+#     context    = "../app"
 #     dockerfile = "Dockerfile"
 #     # platforms = var.platforms
 #     platform = var.platform
@@ -48,7 +48,7 @@ resource "terraform_data" "docker_buildx" {
   triggers_replace = {
     image_tag  = var.image_tag
     platforms  = join(",", var.platforms)
-    dockerfile = filemd5("../kube/Dockerfile")
+    dockerfile = filemd5("../app/Dockerfile")
   }
 
   provisioner "local-exec" {
@@ -68,7 +68,7 @@ resource "terraform_data" "docker_buildx" {
         --platform ${join(",", var.platforms)} \
         --tag ${aws_ecr_repository.repo.repository_url}:${var.image_tag} \
         --push \
-        ../kube/
+        ../app/
       
       echo "✅ Multi-arch image pushed successfully"
     EOT
