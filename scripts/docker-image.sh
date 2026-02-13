@@ -8,29 +8,29 @@ set -euo pipefail
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
-# AWS_REGION="us-east-1"
-# AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
-# REPO_NAME="hello-world-demo"
-# IMAGE_TAG="${IMAGE_TAG:-1.0.0}"
-# PLATFORMS="linux/amd64,linux/arm64"
+AWS_REGION="us-east-1"
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
+REPO_NAME="hello-world-demo"
+IMAGE_TAG="${IMAGE_TAG:-1.3.2}"
+PLATFORMS="linux/amd64,linux/arm64"
 
 # Function to validate environment variables
-validate_env_var() {
-  local var_name="$1"
-  local var_value="${!var_name}"
-  if [[ -z "${var_value}" ]]; then
-    echo "Error: ${var_name} is not set."
-    exit 1
-  else
-    echo "${var_name} is ${var_value}"
-  fi
-}
+# validate_env_var() {
+#   local var_name="$1"
+#   local var_value="${!var_name}"
+#   if [[ -z "${var_value}" ]]; then
+#     echo "Error: ${var_name} is not set."
+#     exit 1
+#   else
+#     echo "${var_name} is ${var_value}"
+#   fi
+# }
 
-validate_env_var "AWS_ACCOUNT_ID"
-validate_env_var "AWS_REGION"
-validate_env_var "REPO_NAME"
-validate_env_var "IMAGE_TAG"
-validate_env_var "PLATFORMS"
+# validate_env_var "AWS_ACCOUNT_ID"
+# validate_env_var "AWS_REGION"
+# validate_env_var "REPO_NAME"
+# validate_env_var "IMAGE_TAG"
+# validate_env_var "PLATFORMS"
 
 export PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
@@ -105,10 +105,10 @@ if ! docker buildx version &> /dev/null; then
 fi
 
 # Ensure buildx builder exists
-if ! docker buildx inspect mybuilder >/dev/null 2>&1; then
-  docker buildx create --name mybuilder --driver docker-container --use
+if ! docker buildx inspect multiarch-builder >/dev/null 2>&1; then
+  docker buildx create --use --name multiarch-builder 2>/dev/null || docker buildx use multiarch-builder
 else
-  docker buildx use mybuilder
+  docker buildx use multiarch-builder
 fi
 
 # ------------------------------------------------------------

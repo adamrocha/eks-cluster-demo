@@ -1,212 +1,52 @@
 # Migration Guide: Terraform to Kubernetes Manifests
 
-This guide explains how to migrate from Terraform-managed Kubernetes resources to direct YAML manifests.
-
-## Overview
-
-**Before:** Kubernetes resources (namespace, deployment, service) were managed by Terraform via the `kubernetes` provider in `terraform/deploys.tf`.
-
-**After:** Resources are now managed as YAML manifests in the `manifests/` directory and applied directly with `kubectl`.
-
-**Note:** The EKS cluster itself (VPC, nodes, IAM roles, etc.) remains managed by Terraform. Only the application-level Kubernetes resources are being migrated.
-
-## What Changed
-
-### Files Created/Updated
-
-1. **`manifests/hello-world-ns.yaml`** - Already existed, no changes needed
-2. **`manifests/hello-world-deployment.yaml`** - Updated to match Terraform configuration
-3. **`manifests/hello-world-service.yaml`** - Updated with all annotations from Terraform
-4. **`manifests/kustomization.yaml`** - New file for kustomize support
-5. **`docs/kubernetes-deployment-guide.md`** - Deployment documentation
-6. **`scripts/update-manifest-image.sh`** - New helper script
-7. **`Makefile`** - Added k8s-* targets for manifest management
-
-### Files to Modify (Optional)
-
-- **`terraform/deploys.tf`** - Comment out or remove `kubernetes_*` resources after migration
+**Before:** K8s resources managed via Terraform `kubernetes` provider in `terraform/deploys.tf`  
+**After:** Resources managed as YAML in `manifests/`, applied with `kubectl`  
+**Note:** EKS cluster (VPC, nodes, IAM) stays in Terraform - only app-level K8s resources migrate
 
 ## Migration Steps
 
-### Step 1: Verify Prerequisites
-
 ```bash
-# Ensure kubeconfig is updated
+# 1. Update kubeconfig
 ./scripts/update-kubeconfig.sh
 
-# Verify cluster access
-kubectl get nodes
-
-# Check current Terraform-managed resources (if any)
-kubectl get all -n hello-world-ns
-```
-
-### Step 2: Update Image Reference
-
-The manifest uses a placeholder image. Update it with your actual ECR image:
-
-```bash
-# Option 1: Use the helper script (recommended)
+# 2. Update image in manifest
 ./scripts/update-manifest-image.sh hello-world-demo 1.0.0
 
-# Option 2: Manually edit manifests/hello-world-deployment.yaml
-# Change the image line to your ECR image with tag
-```
-
-### Step 3: Deploy Using Manifests
-
-```bash
-# Deploy all resources
+# 3. Deploy
 make k8s-apply
 
-# Or use kustomize
-make k8s-kustomize-apply
-
-# Check status
-make k8s-status
-```
-
-### Step 4: Verify Deployment
-
-```bash
-# Check pods are running
-kubectl get pods -n hello-world-ns
-
-# Check service is created
-kubectl get svc -n hello-world-ns
-
-# Get LoadBalancer URL
+# 4. Verify
+kubectl get all -n hello-world-ns
 kubectl get svc hello-world-service -n hello-world-ns \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
-# Test HTTPS endpoint
-curl -k https://$(kubectl get svc hello-world-service -n hello-world-ns \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-```
-
-### Step 5: Remove from Terraform (Optional)
-
-If you want to fully remove the Kubernetes resources from Terraform:
-
-#### Option A: Comment Out (Recommended)
-
-Edit `terraform/deploys.tf` and comment out the three resources:
-
-- `kubernetes_namespace.hello_world_ns`
-- `kubernetes_service.hello_world_service`
-- `kubernetes_deployment.hello_world`
-
-Then run:
-
-```bash
-cd terraform
-terraform plan  # Review changes
-terraform apply # Update state to remove resources
-```
-
-#### Option B: Remove from State Only
-
-Keep the resources running but remove from Terraform state:
-
-```bash
-cd terraform
+# 5. Remove from Terraform (optional)
+# Comment out kubernetes_* resources in terraform/deploys.tf, then:
+cd terraform && terraform apply
+# OR remove from state only:
 terraform state rm kubernetes_namespace.hello_world_ns
-terraform state rm kubernetes_service.hello_world_service
+terraform state rm kubernetes_service.hello_world_service  
 terraform state rm kubernetes_deployment.hello_world
 ```
 
 ## Key Differences
 
-### 1. Image Management
-
-**Terraform:**
-
-```hcl
-image = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.repo_name}:${var.image_tag}@${data.external.image_digest.result["digest"]}"
-```
-
-**Manifests:**
-
-```yaml
-image: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.0.0
-```
-
-You need to manually update the image or use the helper script.
-
-### 2. Deployment Process
-
-**Terraform:**
-
-```bash
-cd terraform
-terraform plan
-terraform apply
-```
-
-**Manifests:**
-
-```bash
-make k8s-apply
-# or
-kubectl apply -f manifests/
-```
-
-### 3. Rolling Updates
-
-**Terraform:**
-
-```bash
-# Update variables.tf or deploys.tf
-terraform apply
-```
-
-**Manifests:**
-
-```bash
-# Update manifest files
-kubectl apply -f manifests/hello-world-deployment.yaml
-# or
-kubectl set image deployment/hello-world \
-  hello-world=<new-image> -n hello-world-ns
-```
-
-### 4. State Management
-
 | Aspect | Terraform | Manifests |
 | ------ | --------- | --------- |
-| State storage | S3 backend | Kubernetes etcd |
-| Drift detection | `terraform plan` | `kubectl diff` |
-| Rollback | `terraform apply` (previous version) | `kubectl rollout undo` |
-| History | Terraform state versions | Deployment revision history |
+| Deploy | `terraform apply` | `kubectl apply -f manifests/` |
+| Updates | Update .tf → apply | Update .yaml → apply or `kubectl set image` |
+| State | S3 backend | Kubernetes etcd |
+| Drift check | `terraform plan` | `kubectl diff` |
+| Rollback | Apply previous version | `kubectl rollout undo` |
 
-## Advantages of Manifests
+**Terraform advantages:** Single tool, state tracking, drift detection, variables/modules  
+**Manifest advantages:** Faster iterations, native K8s, GitOps friendly, simpler CI/CD
 
-1. **Faster iterations** - No plan/apply cycle
-2. **Native Kubernetes** - Direct kubectl commands
-3. **GitOps friendly** - Easier integration with ArgoCD/Flux
-4. **Simpler CI/CD** - No Terraform state management needed
-5. **Standard tooling** - Uses kubectl, kustomize, helm
+## Recommended Hybrid Approach
 
-## Advantages of Terraform
-
-1. **Infrastructure + App** - Single tool for everything
-2. **State tracking** - Explicit state management
-3. **Variables/Modules** - Better templating and reusability
-4. **Dependencies** - Explicit resource dependencies
-5. **Drift detection** - Built-in plan command
-
-## Hybrid Approach (Recommended)
-
-Keep the best of both worlds:
-
-- **Terraform manages:** EKS cluster, VPC, IAM roles, ECR, S3 buckets
-- **Manifests manage:** Deployments, services, configmaps, ingresses
-
-This separation provides:
-
-- Infrastructure stability (Terraform)
-- Application agility (manifests)
-- Clear separation of concerns
+- **Terraform:** EKS cluster, VPC, IAM, ECR, S3 (infrastructure)
+- **Manifests:** Deployments, services, configmaps, ingresses (applications)
 
 ## Troubleshooting
 
@@ -285,5 +125,12 @@ If you need to revert to Terraform management:
 
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Kustomize](https://kustomize.io/)
-- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
-- [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+**Resources exist in both:** `terraform state rm <resource>` OR `terraform destroy -target=<resource>` then redeploy  
+**Image pull issues:** Verify ECR image exists, check node IAM permissions  
+**LB not creating:** Check service events, verify AWS Load Balancer Controller running
+
+## Rollback to Terraform
+
+1. Uncomment resources in `terraform/deploys.tf`
+2. Import: `terraform import kubernetes_namespace.hello_world_ns hello-world-ns` (repeat for deployment, service)
+3. Or delete & recreate: `make k8s-delete` → `cd terraform && terraform apply`

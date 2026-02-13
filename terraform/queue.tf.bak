@@ -1,0 +1,7 @@
+resource "aws_sqs_queue" "sqs_demo" {
+  name                        = "sqs-demo.fifo"
+  kms_master_key_id           = aws_kms_key.eks_secrets.arn
+  fifo_queue                  = true
+  content_based_deduplication = true
+  message_retention_seconds   = 18000
+}
