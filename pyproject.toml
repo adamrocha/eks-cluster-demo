@@ -8,8 +8,8 @@ requires-python = "3.13.11"
 
 dependencies = [
     "boto3 (>=1.40.25,<2.0.0)",
-    "ansible (>=13.3.0,<14.0.0)",
-    "pexpect (>=4.9.0,<5.0.0)"
+#    "pexpect (>=4.9.0,<5.0.0)",
+    "ansible-core (>=2.20.2,<3.0.0)"
 ]
 
 [tool.poetry]

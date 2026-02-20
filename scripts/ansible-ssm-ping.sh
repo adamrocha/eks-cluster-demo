@@ -10,7 +10,7 @@ INSTANCE_ID="${1:-}"
 if [[ -z "${INSTANCE_ID}" ]]; then
   INSTANCE_ID="$(aws ssm describe-instance-information \
     --region "${REGION}" \
-    --query 'InstanceInformationList[?PingStatus==`Online`]|[0].InstanceId' \
+    --query "InstanceInformationList[?PingStatus=='Online']|[0].InstanceId" \
     --output text)"
 fi
 
