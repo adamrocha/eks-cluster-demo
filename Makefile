@@ -5,6 +5,7 @@ DYNAMO_TABLE=terraform-locks
 AWS_REGION=us-east-1
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
 TF_DIR=terraform
+VENV_ACTIVATE=/opt/github/eks-cluster-demo/.venv/bin/activate
 
 .PHONY: check-aws help
 
@@ -54,6 +55,9 @@ help:
 	@echo "�🛠️  Utility Commands:"
 	@echo "  make install-tools       - Install required tools"
 	@echo "  make check-aws           - Verify AWS credentials"
+	@echo "  make ansible-inventory   - Show Ansible dynamic inventory (.venv)"
+	@echo "  make ansible-adhoc ARGS=\"<args>\" - Run ansible adhoc (.venv)"
+	@echo "  make ansible-ssm-ping    - Test connectivity via AWS SSM"
 	@echo "  make help                - Show this help message"
 	@echo ""
 
@@ -69,6 +73,22 @@ check-aws:
 install-tools:
 	@echo "🚀 Running install-tools script..."
 	@/bin/bash ./scripts/install-tools.sh
+
+ansible-inventory: check-aws
+	@echo "🔍 Running Ansible inventory from .venv..."
+	@cd ansible && source "$(VENV_ACTIVATE)" && ansible-inventory --graph
+
+ansible-adhoc: check-aws
+	@if [ -z "$(ARGS)" ]; then \
+		echo "Usage: make ansible-adhoc ARGS=\"all -m ping -vv\""; \
+		exit 1; \
+	fi
+	@echo "🚀 Running ansible adhoc from .venv..."
+	@cd ansible && source "$(VENV_ACTIVATE)" && ansible $(ARGS)
+
+ansible-ssm-ping: check-aws
+	@echo "🔍 Running SSM connectivity check..."
+	@source "$(VENV_ACTIVATE)" && /bin/bash ./scripts/ansible-ssm-ping.sh
 
 tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
 	@echo "🔄 Running Terraform bootstrap..."
