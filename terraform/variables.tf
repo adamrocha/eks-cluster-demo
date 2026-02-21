@@ -6,7 +6,7 @@ variable "region" {
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
-  default     = "eks-demo-cluster"
+  default     = "eks-cluster-demo"
   type        = string
 }
 
@@ -54,7 +54,7 @@ variable "vault_ns" {
 
 variable "repo_name" {
   description = "ECR repository name"
-  default     = "hello-world-demo"
+  default     = "hello-world-repo"
   type        = string
 }
 

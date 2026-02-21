@@ -29,6 +29,27 @@ This project provides an example of deploying and managing an Amazon EKS (Elasti
 - [helm](https://helm.sh/) (optional, for Prometheus, Grafana, and Vault stacks)
 - [eksctl](https://eksctl.io/) (optional)
 
+## GitHub Actions Configuration
+
+The workflow in `.github/workflows/eks-deploy.yml` expects the following GitHub Actions settings.
+
+### Required secrets
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+### Required variables
+
+- `AWS_ACCOUNT_ID`
+- `AWS_REGION`
+
+### Optional variables (with defaults)
+
+- `EKS_CLUSTER_NAME` (default: `eks-cluster-demo`)
+- `NAMESPACE` (default: `hello-world-ns`)
+- `REPO_NAME` (default: `hello-world-repo`)
+- `IMAGE_TAG` (default: `1.3.2`)
+
 ## Usage
 
 ### Option 1: Terraform-managed (Infrastructure + Applications)
@@ -207,8 +228,7 @@ See [docs/blue-green-deployment.md](docs/blue-green-deployment.md) for detailed 
 eks-cluster-demo/
 ├── .github/                                    # GitHub Actions workflows
 │   └── workflows/
-│       ├── eks-deploy.yml                      # CI/CD deployment pipeline
-│       └── destroy-logic.yml                   # Infrastructure teardown
+│       └── eks-deploy.yml                      # CI/CD deployment pipeline
 ├── docs/                                       # Documentation
 │   ├── kubernetes-deployment-guide.md          # Kubernetes deployment guide
 │   ├── terraform-to-manifests-migration.md     # Migration guide
@@ -307,7 +327,7 @@ eks-cluster-demo/
 
 ```sh
 # Verify ECR repository and image
-aws ecr describe-images --repository-name hello-world-demo --region us-east-1
+aws ecr describe-images --repository-name hello-world-repo --region us-east-1
 # Check node IAM permissions
 kubectl describe node | grep InstanceProfile
 

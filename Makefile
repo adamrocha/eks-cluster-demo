@@ -170,15 +170,6 @@ tf-destroy: k8s-delete
 	terraform -chdir=$(TF_DIR) destroy 
 	@echo "✅ Terraform resources destroyed."
 
-# tf-destroy-clean: k8s-delete
-# 	@echo "🧹 Cleaning up Load Balancers and Security Groups..."
-# 	@./scripts/cleanup_lb.sh hello-world-ns || true
-# 	@sleep 5
-# 	@./scripts/cleanup_sg.sh || true
-# 	@echo "🚀 Running Terraform destroy..."
-# 	cd $(TF_DIR) && terraform destroy
-# 	@echo "✅ Terraform resources destroyed with cleanup."
-
 tf-output:
 	terraform -chdir=$(TF_DIR) output
 	@echo "✅ Terraform outputs displayed."
@@ -190,9 +181,9 @@ tf-state:
 	@echo "🔍 To view specific resource, run 'terraform state show <resource_name>'."
 
 tf-delete-ecr-repo:
-	@echo "⚠️  Deleting ECR repository: hello-world-demo"
-	@aws ecr delete-repository --repository-name hello-world-demo --region $(AWS_REGION) --force
-	@echo "✅ ECR repository 'hello-world-demo' deleted."
+	@echo "⚠️  Deleting ECR repository: hello-world-repo"
+	@aws ecr delete-repository --repository-name hello-world-repo --region $(AWS_REGION) --force
+	@echo "✅ ECR repository 'hello-world-repo' deleted."
 
 # make nuke : Interactive (default)
 # make nuke DRY_RUN=1 : Dry run (show what would be deleted, don’t delete)
