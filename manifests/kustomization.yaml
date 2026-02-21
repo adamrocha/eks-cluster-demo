@@ -5,14 +5,15 @@ resources:
   - hello-world-ns.yaml
   - hello-world-deployment.yaml
   - hello-world-service.yaml
+  - manifests/hello-world-networkpolicy.yaml
   - hello-world-networkpolicy.yaml
-# Optionally add common labels
-# Optionally add common annotations
-# Example: Override image without editing the deployment file directly
-# Uncomment and modify as needed:
-# images:
-#   - name: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-repo
-#     newTag: 1.2.6
+commonAnnotations:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: eks-cluster-demo
+  docs: docs/kubernetes-deployment-guide.md
+images:
+  - name: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-repo
+    newTag: 1.2.6
 #     # Or use newName to change registry:
 #     # newName: newregistry.io/hello-world-repo
 # Example: Add config map generator
@@ -21,9 +22,6 @@ resources:
 #     literals:
 #       - APP_ENV=production
 #       - LOG_LEVEL=info
-commonAnnotations:
-  Test: Override replicas
-  managed-by: kustomize
 replicas:
   - count: 3
     name: hello-world

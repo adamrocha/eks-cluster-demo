@@ -261,25 +261,22 @@ k8s-apply-ns:
 	kubectl apply -f manifests/hello-world-ns.yaml
 	@echo "✅ Namespace created."
 
-k8s-apply: k8s-apply-ns
-	@echo "🚀 Deploying Kubernetes manifests..."
-	kubectl apply -f manifests/hello-world-deployment.yaml
-	kubectl apply -f manifests/hello-world-service.yaml
+k8s-apply:
+	@echo "🚀 Deploying Kubernetes manifests with kustomize..."
+	kubectl apply -k manifests/
 	@echo "✅ Kubernetes resources deployed."
 
 k8s-delete:
 	@echo "⚠️  WARNING: This will delete all Kubernetes resources."
 	@read -p "Are you sure? (y/N): " confirm; \
 	if [ "$$confirm" = "y" ]; then \
-		echo "🗑️  Deleting Kubernetes manifests..."; \
-		kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true; \
-		kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true; \
-		kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true; \
-		echo "⏳ Waiting for resources to be fully deleted..."; \
-		sleep 30; \
+		echo "🗑️  Deleting Kubernetes resources..."; \
+		kubectl delete -k manifests/ --timeout=300s --ignore-not-found=true; \
+		echo "⏳ Waiting for resources to be deleted..."; \
+		kubectl wait --for=delete namespace/"$(NAMESPACE)" --timeout=300s; \
 		echo "✅ Kubernetes resources deleted."; \
 	else \
-		echo "❎ Deletion cancelled."; \
+		echo "❎ Aborted."; \
 	fi
 
 k8s-undo:
