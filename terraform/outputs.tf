@@ -19,10 +19,10 @@ output "node_role_arn" {
   value       = aws_iam_role.eks_nodes.arn
 }
 
-output "image_digests" {
-  description = "ECR Image Digest"
-  value       = data.aws_ecr_image.image.image_digest
-}
+# output "image_digests" {
+#   description = "ECR Image Digest"
+#   value       = data.aws_ecr_image.image.image_digest
+# }
 
 # output "hello_world_service_endpoint" {
 #   description = "External endpoint of the hello-world LoadBalancer service"
