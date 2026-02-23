@@ -22,7 +22,7 @@ resource "aws_kms_key" "eks_secrets" {
 
 resource "aws_kms_key" "s3_bucket_key" {
   description             = "KMS key for S3 bucket encryption"
-  deletion_window_in_days = 10 # Required for KMS key deletion
+  deletion_window_in_days = 7
   enable_key_rotation     = true
 
   policy = jsonencode({
@@ -43,13 +43,14 @@ resource "aws_kms_key" "s3_bucket_key" {
 }
 
 resource "aws_kms_alias" "s3_bucket_key_alias" {
-  name          = "alias/s3-bucket-key" # Choose a descriptive alias
+  name          = "alias/s3-bucket-key"
   target_key_id = aws_kms_key.s3_bucket_key.id
 }
 
 resource "aws_kms_key" "cloudwatch_logs" {
-  description         = "KMS key for CloudWatch Logs"
-  enable_key_rotation = true
+  description             = "KMS key for CloudWatch Logs"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
 
   policy = jsonencode({
     Version = "2012-10-17",

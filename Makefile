@@ -5,6 +5,7 @@ DYNAMO_TABLE=terraform-locks
 AWS_REGION=us-east-1
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(pass aws/dev/aws_account_id)}"
 TF_DIR=terraform
+VENV_ACTIVATE=/opt/github/eks-cluster-demo/.venv/bin/activate
 
 .PHONY: check-aws help
 
@@ -54,6 +55,8 @@ help:
 	@echo "�🛠️  Utility Commands:"
 	@echo "  make install-tools       - Install required tools"
 	@echo "  make check-aws           - Verify AWS credentials"
+	@echo "  make ansible-inventory   - Show Ansible dynamic inventory (.venv)"
+	@echo "  make ansible-ssm-ping    - Test connectivity via AWS SSM"
 	@echo "  make help                - Show this help message"
 	@echo ""
 
@@ -69,6 +72,14 @@ check-aws:
 install-tools:
 	@echo "🚀 Running install-tools script..."
 	@/bin/bash ./scripts/install-tools.sh
+
+ansible-inventory: check-aws
+	@echo "🔍 Running Ansible inventory from .venv..."
+	@cd ansible && source "$(VENV_ACTIVATE)" && ansible-inventory --graph
+
+ansible-ssm-ping: check-aws
+	@echo "🔍 Running SSM connectivity check..."
+	@source "$(VENV_ACTIVATE)" && /bin/bash ./scripts/ansible-ssm-ping.sh
 
 tf-bootstrap: tf-bucket tf-format tf-init tf-validate tf-plan
 	@echo "🔄 Running Terraform bootstrap..."
@@ -150,15 +161,6 @@ tf-destroy: k8s-delete
 	terraform -chdir=$(TF_DIR) destroy 
 	@echo "✅ Terraform resources destroyed."
 
-# tf-destroy-clean: k8s-delete
-# 	@echo "🧹 Cleaning up Load Balancers and Security Groups..."
-# 	@./scripts/cleanup_lb.sh hello-world-ns || true
-# 	@sleep 5
-# 	@./scripts/cleanup_sg.sh || true
-# 	@echo "🚀 Running Terraform destroy..."
-# 	cd $(TF_DIR) && terraform destroy
-# 	@echo "✅ Terraform resources destroyed with cleanup."
-
 tf-output:
 	terraform -chdir=$(TF_DIR) output
 	@echo "✅ Terraform outputs displayed."
@@ -170,9 +172,9 @@ tf-state:
 	@echo "🔍 To view specific resource, run 'terraform state show <resource_name>'."
 
 tf-delete-ecr-repo:
-	@echo "⚠️  Deleting ECR repository: hello-world-demo"
-	@aws ecr delete-repository --repository-name hello-world-demo --region $(AWS_REGION) --force
-	@echo "✅ ECR repository 'hello-world-demo' deleted."
+	@echo "⚠️  Deleting ECR repository: hello-world-repo"
+	@aws ecr delete-repository --repository-name hello-world-repo --region $(AWS_REGION) --force
+	@echo "✅ ECR repository 'hello-world-repo' deleted."
 
 # make nuke : Interactive (default)
 # make nuke DRY_RUN=1 : Dry run (show what would be deleted, don’t delete)
@@ -250,25 +252,22 @@ k8s-apply-ns:
 	kubectl apply -f manifests/hello-world-ns.yaml
 	@echo "✅ Namespace created."
 
-k8s-apply: k8s-apply-ns
-	@echo "🚀 Deploying Kubernetes manifests..."
-	kubectl apply -f manifests/hello-world-deployment.yaml
-	kubectl apply -f manifests/hello-world-service.yaml
+k8s-apply:
+	@echo "🚀 Deploying Kubernetes manifests with kustomize..."
+	kubectl apply -k manifests/
 	@echo "✅ Kubernetes resources deployed."
 
 k8s-delete:
 	@echo "⚠️  WARNING: This will delete all Kubernetes resources."
 	@read -p "Are you sure? (y/N): " confirm; \
 	if [ "$$confirm" = "y" ]; then \
-		echo "🗑️  Deleting Kubernetes manifests..."; \
-		kubectl delete -f manifests/hello-world-service.yaml --ignore-not-found=true; \
-		kubectl delete -f manifests/hello-world-deployment.yaml --ignore-not-found=true; \
-		kubectl delete -f manifests/hello-world-ns.yaml --ignore-not-found=true; \
-		echo "⏳ Waiting for resources to be fully deleted..."; \
-		sleep 30; \
+		echo "🗑️  Deleting Kubernetes resources..."; \
+		kubectl delete -k manifests/ --timeout=300s --ignore-not-found=true; \
+		echo "⏳ Waiting for resources to be deleted..."; \
+		kubectl wait --for=delete namespace/"$(NAMESPACE)" --timeout=300s; \
 		echo "✅ Kubernetes resources deleted."; \
 	else \
-		echo "❎ Deletion cancelled."; \
+		echo "❎ Aborted."; \
 	fi
 
 k8s-undo:

@@ -9,7 +9,7 @@ AWS CLI, kubectl (v1.28+), EKS cluster via Terraform, kubeconfig updated, Docker
 ## Configuration
 
 **Image:** `802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.0.0` (nginx:alpine)  
-**Security:** Non-root (UID 101), read-only root FS, dropped capabilities, no privilege escalation  
+**Security:** Non-root (UID 10001), read-only root FS, dropped capabilities, no privilege escalation  
 **Ports:** HTTP 8080→80, HTTPS 8443→443 (self-signed TLS)  
 **Resources:** CPU 50m-100m, Memory 32Mi-64Mi  
 **Replicas:** 3 (rolling update)  

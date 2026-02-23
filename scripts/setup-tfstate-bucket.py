@@ -3,9 +3,12 @@
 setup_tfstate_bucket.py
 Checks if the Terraform state S3 bucket exists, and creates it if not.
 """
-import boto3
-import sys
+
 import os
+import sys
+
+import boto3
+
 
 def main():
     bucket_name = os.getenv("TF_STATE_BUCKET", "terraform-state-bucket-2727")
@@ -27,6 +30,7 @@ def main():
         except Exception as e:
             print(f"Error creating bucket: {e}")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -42,6 +42,5 @@ terraform.rc
 # Ignore macOS system files
 .DS_Store*
 
-# Ignore Python virtual environment directories
-venv/
+# Ignore Python virtual environment directory
 .venv/

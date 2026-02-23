@@ -9,7 +9,7 @@ import subprocess
 import boto3
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-CLUSTER_NAME = os.getenv("CLUSTER_NAME", "eks-demo-cluster")
+CLUSTER_NAME = os.getenv("CLUSTER_NAME", "eks-cluster-demo")
 
 
 def update_kubeconfig(cluster_name, region):

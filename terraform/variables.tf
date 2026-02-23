@@ -6,7 +6,7 @@ variable "region" {
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
-  default     = "eks-demo-cluster"
+  default     = "eks-cluster-demo"
   type        = string
 }
 
@@ -22,11 +22,11 @@ variable "node_group_name" {
   type        = string
 }
 
-variable "hello_world_ns" {
-  description = "Name of the Kubernetes namespace"
-  default     = "hello-world-ns"
-  type        = string
-}
+# variable "hello_world_ns" {
+#   description = "Name of the Kubernetes namespace"
+#   default     = "hello-world-ns"
+#   type        = string
+# }
 
 variable "monitoring_ns" {
   description = "Name of the Kubernetes namespace"
@@ -40,21 +40,21 @@ variable "vault_ns" {
   type        = string
 }
 
-variable "service" {
-  description = "Name of the Kubernetes service"
-  default     = "hello-world-service"
-  type        = string
-}
+# variable "service" {
+#   description = "Name of the Kubernetes service"
+#   default     = "hello-world-service"
+#   type        = string
+# }
 
-variable "deployment" {
-  description = "Name of the Kubernetes deployment"
-  default     = "hello-world"
-  type        = string
-}
+# variable "deployment" {
+#   description = "Name of the Kubernetes deployment"
+#   default     = "hello-world"
+#   type        = string
+# }
 
 variable "repo_name" {
   description = "ECR repository name"
-  default     = "hello-world-demo"
+  default     = "hello-world-repo"
   type        = string
 }
 
@@ -76,12 +76,12 @@ variable "platforms" {
   type        = list(string)
 }
 
-variable "platform" {
-  description = "Platform for Docker build"
-  # default     = "linux/amd64"
-  default = "linux/arm64"
-  type    = string
-}
+# variable "platform" {
+#   description = "Platform for Docker build"
+#   # default     = "linux/amd64"
+#   default = "linux/arm64"
+#   type    = string
+# }
 
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"

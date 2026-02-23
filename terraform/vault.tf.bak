@@ -16,6 +16,7 @@ resource "helm_release" "vault" {
   namespace        = var.vault_ns
   create_namespace = true
   timeout          = 600
+ 
   set = [
     {
       name  = "server.dev.enabled"

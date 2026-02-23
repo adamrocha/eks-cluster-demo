@@ -110,7 +110,7 @@ kubectl describe pod -n hello-world-ns -l version=green
 kubectl get events -n hello-world-ns --sort-by='.lastTimestamp'
 
 # Verify image exists in ECR
-aws ecr describe-images --repository-name hello-world-demo --image-ids imageTag=1.4.0
+aws ecr describe-images --repository-name hello-world-repo --image-ids imageTag=1.4.0
 ```
 
 ### Service Not Routing Correctly

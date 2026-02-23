@@ -4,10 +4,11 @@ data "aws_eks_cluster_auth" "eks" {
   name = aws_eks_cluster.eks.name
 }
 
-data "external" "my_ip" {
-  program = ["bash", "../scripts/fetch-ip.sh"]
-}
+# data "external" "my_ip" {
+#   program = ["bash", "../scripts/fetch-ip.sh"]
+# }
 
+# trunk-ignore(checkov/CKV_AWS_38)
 resource "aws_eks_cluster" "eks" {
   # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
@@ -53,8 +54,8 @@ resource "aws_eks_node_group" "node_group" {
   subnet_ids      = aws_subnet.public[*].id
 
   scaling_config {
-    min_size     = 2
-    desired_size = 3
+    min_size     = 1
+    desired_size = 1
     max_size     = 4
   }
 

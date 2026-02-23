@@ -15,23 +15,105 @@ resource "helm_release" "prometheus" {
   version          = "81.5.0"
   namespace        = var.monitoring_ns
   create_namespace = true
-  timeout          = 600
+  timeout          = 900
   skip_crds        = false
   wait             = true
   replace          = true
+
+  values = [
+    yamlencode({
+      # Reduce resource requirements
+      prometheus = {
+        prometheusSpec = {
+          replicas = 1
+          resources = {
+            requests = {
+              cpu    = "200m"
+              memory = "512Mi"
+            }
+            limits = {
+              cpu    = "1000m"
+              memory = "2Gi"
+            }
+          }
+          # Reduce retention to save resources
+          retention = "7d"
+          # Disable persistent storage to avoid PVC issues
+          storageSpec = {}
+        }
+      }
+      
+      # Reduce Grafana resources
+      grafana = {
+        replicas = 1
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+          limits = {
+            cpu    = "500m"
+            memory = "512Mi"
+          }
+        }
+        # Disable persistence to save resources
+        persistence = {
+          enabled = false
+        }
+      }
+      
+      # Disable Alertmanager to save pod slots
+      alertmanager = {
+        enabled = false
+      }
+      
+      # Disable admission webhooks that can cause timeouts
+      prometheusOperator = {
+        admissionWebhooks = {
+          enabled = false
+          # Prevent cert-manager or job from running
+          patch = {
+            enabled = false
+          }
+        }
+        # Remove TLS secret volume mounts since webhooks are disabled
+        tls = {
+          enabled = false
+        }
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+          limits = {
+            cpu    = "500m"
+            memory = "512Mi"
+          }
+        }
+      }
+      
+      # Keep kube-state-metrics but disable node-exporter (single node cluster)
+      kubeStateMetrics = {
+        enabled = true
+      }
+      nodeExporter = {
+        enabled = false
+      }
+    })
+  ]
 }
 
 # CloudWatch Log Group for SSM Session Manager logs
 # Required by ec2_ssm_s3_role policy which restricts logs:CreateLogStream to this specific group
-resource "aws_cloudwatch_log_group" "ssm_session_logs" {
-  name              = "/aws/ssm/session-logs"
-  retention_in_days = 30
+# resource "aws_cloudwatch_log_group" "ssm_session_logs" {
+#   name              = "/aws/ssm/session-logs"
+#   retention_in_days = 30
 
-  kms_key_id = aws_kms_key.cloudwatch_logs.arn
+#   kms_key_id = aws_kms_key.cloudwatch_logs.arn
 
-  tags = {
-    Name        = "SSM Session Logs"
-    ManagedBy   = "Terraform"
-    Environment = "production"
-  }
-}
+#   tags = {
+#     Name        = "SSM Session Logs"
+#     ManagedBy   = "Terraform"
+#     Environment = "production"
+#   }
+# }
