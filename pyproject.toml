@@ -3,12 +3,11 @@ name = "eks-cluster-demo"
 version = "0.1.0"
 description = "Python scripts for EKS cluster management"
 authors = [{name = "devops"}]
-requires-python = ">=3.12,<4.0"
+# requires-python = ">=3.12,<4.0"
+requires-python = "3.14.3"
 
 dependencies = [
-#    "boto3 (>=1.40.25,<2.0.0)",
-    "boto3 (==1.42.54)",
-#    "pexpect (>=4.9.0,<5.0.0)",
+    "boto3 (>=1.40.25,<2.0.0)",
     "ansible-core (>=2.20.2,<3.0.0)"
 ]
 

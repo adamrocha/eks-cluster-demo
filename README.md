@@ -151,7 +151,6 @@ make k8s-kustomize-delete   # Delete resources
 make help          # Show all available commands
 make check-aws     # Verify AWS credentials
 make ansible-inventory # Show Ansible dynamic inventory (.venv)
-make ansible-adhoc ARGS="all -m ping -vv" # Run ansible adhoc (.venv)
 make ansible-ssm-ping # Test EC2 connectivity via AWS SSM
 make install-tools # Install required tools
 ```
