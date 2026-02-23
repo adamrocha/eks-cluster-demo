@@ -1,23 +1,35 @@
 #!/usr/bin/env python3
-"""
-fetch_ip.py
-Retrieves the public IPv4 address of the machine and outputs it in JSON format.
-"""
 import json
 import urllib.request
+from urllib.parse import urlparse
 
-def get_public_ip():
+
+def get_public_ip(timeout=5):
+    url_string = "https://4.ident.me"
+    # 1. Audit URL for permitted schemes (Fixes B310 / SSRF)
+    parsed = urlparse(url_string)
+    if parsed.scheme not in ("http", "https"):
+        return {"error": f"Disallowed scheme: {parsed.scheme}"}
+    headers = {"User-Agent": "Mozilla/5.0"}
+
     try:
-        with urllib.request.urlopen("https://4.ident.me") as response:
-            ip = response.read().decode().strip()
-        return ip
+        req = urllib.request.Request(url_string, headers=headers)
+        # 2. Add '# nosec' if the linter persists.
+        # This tells Trunk: "I have audited the scheme above."
+        with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec
+            return response.read().decode().strip()
     except Exception as e:
-        print(json.dumps({"error": str(e)}))
-        exit(1)
+        return {"error": str(e)}
+
 
 def main():
-    ip = get_public_ip()
-    print(json.dumps({"ip": ip}))
+    result = get_public_ip()
+    print(
+        json.dumps(
+            {"ip": result, "status": "success"} if isinstance(result, str) else result
+        )
+    )
+
 
 if __name__ == "__main__":
     main()

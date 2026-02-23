@@ -1,38 +1,42 @@
 #!/usr/bin/env bash
 # This script fetches the total billing amount for the current month using AWS CLI.
-# It uses the AWS Cost Explorer service to get the cost and usage data.
-# Ensure you have the AWS CLI installed and configured with the necessary permissions.
-# Usage: ./fetch-billing-total.sh
-
 set -euo pipefail
 
 export AWS_PAGER=""
 
-# Check if AWS CLI is installed
-if ! command -v aws &> /dev/null
-then
-    echo "AWS CLI could not be found. Please install it first."
-    exit
+# 1. Handle Date Portability (Linux vs macOS)
+if date --version >/dev/null 2>&1; then
+	# GNU Date (Linux)
+	START_DATE="$(date +%Y-%m-01)"
+	END_DATE="$(date -d "tomorrow" +%Y-%m-%d)"
+else
+	# BSD Date (macOS)
+	START_DATE="$(date +%Y-%m-01)"
+	END_DATE="$(date -v+1d +%Y-%m-%d)"
 fi
 
-# Check if the user is authenticated
-if ! aws sts get-caller-identity &> /dev/null
-then
-    echo "You are not authenticated. Please configure your AWS CLI."
-    exit
+# 2. Dependency Check
+if ! command -v aws &>/dev/null; then
+	echo "Error: AWS CLI could not be found." >&2
+	exit 1
 fi
 
-# Check if the user has permission to access Cost Explorer
-if ! aws ce get-cost-and-usage --time-period "Start=$(date +%Y-%m-01),End=$(date -v+1d +%Y-%m-%d)" --granularity MONTHLY --metrics "UnblendedCost" &> /dev/null
-then
-    echo "You do not have permission to access Cost Explorer. Please check your IAM policies."
-    exit
+# 3. Authentication Check
+if ! aws sts get-caller-identity &>/dev/null; then
+	echo "Error: You are not authenticated. Please configure your AWS CLI." >&2
+	exit 1
 fi
 
-# Fetch the total billing amount for the current month
-aws ce get-cost-and-usage \
-  --time-period "Start=$(date +%Y-%m-01),End=$(date -v+1d +%Y-%m-%d)" \
-  --granularity MONTHLY \
-  --metrics "UnblendedCost" \
-  --query "ResultsByTime[].{Start:TimePeriod.Start,Amount:Total.UnblendedCost.Amount}" \
-  --output table
+echo "Fetching billing for period: ${START_DATE} to ${END_DATE}"
+
+# 4. Fetch the total billing amount
+if ! aws ce get-cost-and-usage \
+	--time-period "Start=${START_DATE},End=${END_DATE}" \
+	--granularity MONTHLY \
+	--metrics "UnblendedCost" \
+	--query "ResultsByTime[].{Start:TimePeriod.Start,Amount:Total.UnblendedCost.Amount,Unit:Total.UnblendedCost.Unit}" \
+	--output table; then
+
+	echo "Error: Failed to access Cost Explorer. Check IAM policy 'ce:GetCostAndUsage'." >&2
+	exit 1
+fi

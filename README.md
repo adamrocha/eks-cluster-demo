@@ -82,7 +82,7 @@ kubectl get nodes
 
 ### Option 2: Hybrid Approach (Terraform for Infrastructure, Manifests for Apps)
 
-## Recommended for production use**
+## Recommended for production use\*\*
 
 1. **Clone the repository:**
 
@@ -148,12 +148,11 @@ make k8s-kustomize-delete   # Delete resources
 ### Utility Commands
 
 ```sh
-make help          # Show all available commands
-make check-aws     # Verify AWS credentials
-make ansible-inventory # Show Ansible dynamic inventory (.venv)
-make ansible-adhoc ARGS="all -m ping -vv" # Run ansible adhoc (.venv)
-make ansible-ssm-ping # Test EC2 connectivity via AWS SSM
-make install-tools # Install required tools
+make help                # Show all available commands
+make check-aws           # Verify AWS credentials
+make ansible-inventory   # Show Ansible dynamic inventory (.venv)
+make ansible-ssm-ping    # Test EC2 connectivity via AWS SSM
+make install-tools       # Install required tools
 ```
 
 ### Common Issues
@@ -323,7 +322,7 @@ eks-cluster-demo/
 - **VPC Flow Logs** - Network traffic analysis
 - **SSM Session Manager** - Secure instance access without SSH keys
 
-## Troubleshooting**
+## Troubleshooting\*\*
 
 ```sh
 # Verify ECR repository and image
