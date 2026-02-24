@@ -99,3 +99,44 @@ resource "terraform_data" "docker_buildx" {
 # resource "docker_registry_image" "hello_world" {
 #   name = docker_image.hello_world.name
 # }
+
+# To switch to PAID Enhanced Scanning, you use this separate resource:
+# resource "aws_inspector2_enclosure_ecr_config" "ecr_inspector_config" {
+#   rescan_duration = "DAYS_30"
+# }
+
+# To set up lifecycle policies for the ECR repository, you can use the aws_ecr_lifecycle_policy resource. This example defines two rules: one to expire untagged images older than 14 days, and another to keep only the last 30 tagged images with a specific prefix.
+# resource "aws_ecr_lifecycle_policy" "repo_policy" {
+#   repository = aws_ecr_repository.repo.name
+
+#   policy = jsonencode({
+#     rules = [
+#       {
+#         rulePriority = 1
+#         description  = "Expire untagged images older than 14 days"
+#         selection = {
+#           tagStatus   = "untagged"
+#           countType   = "sinceImagePushed"
+#           countUnit   = "days"
+#           countNumber = 14
+#         }
+#         action = {
+#           type = "expire"
+#         }
+#       },
+#       {
+#         rulePriority = 2
+#         description  = "Keep only the last 30 tagged images"
+#         selection = {
+#           tagStatus   = "tagged"
+#           tagPrefixList = ["v"] # Adjust this to your tagging convention (e.g., "v", "prod", "build-")
+#           countType   = "imageCountMoreThan"
+#           countNumber = 30
+#         }
+#         action = {
+#           type = "expire"
+#         }
+#       }
+#     ]
+#   })
+# }
