@@ -4,6 +4,9 @@ import sys
 
 import boto3
 
+# Threshold for "Unexpected" costs (Adjust as needed)
+THRESHOLD = 10.00
+
 SERVICE_MAP = {
     "Amazon Elastic Container Service for Kubernetes": "EKS",
     "Amazon Elastic Compute Cloud - Compute": "EC2 - Compute",
@@ -13,6 +16,13 @@ SERVICE_MAP = {
     "AWS Key Management Service": "KMS",
     "AmazonCloudWatch": "CloudWatch",
 }
+
+# Terminal Colors
+BLUE = "\033[1;34m"
+GREEN = "\033[1;32m"
+RED = "\033[1;31m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
 
 def get_time_period():
@@ -33,10 +43,10 @@ def main():
             GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
         )
     except Exception as e:
-        print(f"\033[1;31mError:\033[0m {e}")
+        print(f"{RED}Error:{RESET} {e}")
         sys.exit(1)
 
-    print(f"\n\033[1;34m--- AWS Monthly Spend: {start} to {end} ---\033[0m")
+    print(f"\n{BLUE}--- AWS Monthly Spend: {start} to {end} ---{RESET}")
     print(f"{'Service':<30} {'Amount':>12}")
     print("-" * 43)
 
@@ -49,19 +59,21 @@ def main():
             if cost > 0.005:
                 groups.append((name, cost))
 
+    # Sort: Highest cost first
     groups.sort(key=lambda x: x[1], reverse=True)
 
     for name, cost in groups:
         display_name = SERVICE_MAP.get(name, name[:30])
-        # Format the cost as a string first: "$12.08"
         cost_str = f"${cost:.2f}"
-        # Now right-align that entire string
-        print(f"{display_name:<30} \033[1;32m{cost_str:>12}\033[0m")
+
+        # Color coding: Red if >= THRESHOLD, else Green
+        color = RED if cost >= THRESHOLD else GREEN
+        print(f"{display_name:<30} {color}{cost_str:>12}{RESET}")
         total_cost += cost
 
     total_str = f"${total_cost:.2f}"
     print("-" * 43)
-    print(f"\033[1m{'TOTAL':<30} {total_str:>12}\033[0m\n")
+    print(f"{BOLD}{'TOTAL':<30} {total_str:>12}{RESET}\n")
 
 
 if __name__ == "__main__":
