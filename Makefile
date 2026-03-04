@@ -306,6 +306,10 @@ k8s-shell:
 	echo "📦 Connecting to pod: $$POD"; \
 	kubectl exec -it -n hello-world-ns $$POD -- sh
 
+k8s-grafana-secret:
+	@echo "🔐 Fetching Grafana admin password from monitoring namespace..."
+	kubectl get secrets -n monitoring-ns prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d
+
 k8s-events:
 	@echo "📜 Fetching events from hello-world namespace..."
 	kubectl get events -n hello-world-ns --sort-by='.metadata.creationTimestamp'

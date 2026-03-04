@@ -28,6 +28,7 @@ jobs:
   build-and-push-image:
     if: github.event_name != 'delete'
     name: Build and Push Image
+    needs: provision-infrastructure
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -42,12 +43,6 @@ jobs:
 
       - name: Verify AWS credentials
         run: aws sts get-caller-identity > /dev/null
-
-      - name: Ensure ECR repository exists
-        run: |
-          if ! aws ecr describe-repositories --repository-names "${{ env.REPO_NAME }}" --region "${{ env.AWS_REGION }}" > /dev/null 2>&1; then
-            aws ecr create-repository --repository-name "${{ env.REPO_NAME }}" --region "${{ env.AWS_REGION }}" > /dev/null
-          fi
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -119,6 +114,14 @@ jobs:
 
       - name: Terraform Init
         run: terraform -chdir=terraform init
+
+      - name: Import existing ECR repo into Terraform state (if needed)
+        run: |
+          if aws ecr describe-repositories --repository-names "${{ env.REPO_NAME }}" --region "${{ env.AWS_REGION }}" > /dev/null 2>&1; then
+            if ! terraform -chdir=terraform state show aws_ecr_repository.repo > /dev/null 2>&1; then
+              terraform -chdir=terraform import aws_ecr_repository.repo "${{ env.REPO_NAME }}"
+            fi
+          fi
 
       - name: Terraform Validate
         run: terraform -chdir=terraform validate
