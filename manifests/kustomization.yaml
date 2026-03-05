@@ -12,7 +12,7 @@ commonAnnotations:
   docs: docs/kubernetes-deployment-guide.md
 images:
   - name: 802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-repo
-    newTag: 1.2.6
+    newTag: 1.3.2
 #     # Or use newName to change registry:
 #     # newName: newregistry.io/hello-world-repo
 # Example: Add config map generator
