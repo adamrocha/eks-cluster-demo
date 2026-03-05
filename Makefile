@@ -203,7 +203,7 @@ k8s-delete:
 		echo "🗑️  Deleting Kubernetes resources..."; \
 		kubectl delete -k manifests/ --timeout=300s --ignore-not-found=true; \
 		echo "⏳ Waiting for resources to be deleted..."; \
-		kubectl wait --for=delete namespace/"$(NAMESPACE)" --timeout=300s; \
+		kubectl wait --for=delete namespace hello-world-ns --timeout=300s; \
 		echo "✅ Kubernetes resources deleted."; \
 	else \
 		echo "❎ Aborted."; \
