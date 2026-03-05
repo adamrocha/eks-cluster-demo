@@ -31,18 +31,14 @@ help:
 	@echo "  make k8s-validate        - Validate manifests (client-side)"
 	@echo "  make k8s-validate-server - Validate against cluster (server-side)"
 	@echo "  make k8s-apply           - Deploy all manifests"
+	@echo "  make k8s-install-metrics-server - Install metrics-server for HPA CPU metrics"
 	@echo "  make k8s-status          - Check deployment status"
 	@echo "  make k8s-logs            - View application logs"
 	@echo "  make k8s-shell           - Open shell in running container"
 	@echo "  make k8s-describe        - Describe deployment"
 	@echo "  make k8s-restart         - Restart deployment"
 	@echo "  make k8s-delete          - Delete all manifests"
-	@echo ""
-	@echo "🎨 Kustomize Commands:"
-	@echo "  make k8s-kustomize-validate - Validate kustomize config"
-	@echo "  make k8s-kustomize-apply    - Deploy with kustomize"
-	@echo "  make k8s-kustomize-diff     - Preview changes"
-	@echo "  make k8s-kustomize-delete   - Delete resources"
+	@echo "  make k8s-kustomize-diff  - Preview changes"
 	@echo ""
 	@echo "�🟢 Blue/Green Deployment Commands:"
 	@echo "  make bg-deploy           - Deploy blue/green infrastructure"
@@ -55,6 +51,7 @@ help:
 	@echo "�🛠️  Utility Commands:"
 	@echo "  make install-tools       - Install required tools"
 	@echo "  make check-aws           - Verify AWS credentials"
+	@echo "  make nuke_tf_bucket      - Delete Terraform state S3 bucket (supports FORCE=1 DRY_RUN=1)"
 	@echo "  make ansible-inventory   - Show Ansible dynamic inventory (.venv)"
 	@echo "  make ansible-ssm-ping    - Test connectivity via AWS SSM"
 	@echo "  make help                - Show this help message"
@@ -182,80 +179,29 @@ tf-delete-ecr-repo:
 # make nuke FORCE=1 DRY_RUN=1 : Non-interactive dry run in CI
 
 nuke_tf_bucket: check-aws
-	@if [ "$(FORCE)" = "1" ]; then \
-		confirm="y"; \
-	else \
-		echo "⚠️  WARNING: This will delete the S3 bucket: $(S3_BUCKET)"; \
-		read -p "Are you sure? (y/N): " confirm; \
-	fi; \
-	if [ "$$confirm" = "y" ]; then \
-		set -euo pipefail; \
-		echo "🔄 Scanning bucket for versioned objects..."; \
-		while true; do \
-			output=$$(aws s3api list-object-versions --bucket $(S3_BUCKET) --output json); \
-			delete_json=$$(echo "$$output" | jq '[.Versions[]?, .DeleteMarkers[]?] | map({Key: .Key, VersionId: .VersionId})'); \
-			count=$$(echo "$$delete_json" | jq 'length'); \
-			if [ "$$count" -eq 0 ]; then \
-				break; \
-			fi; \
-			echo "   found $$count objects..."; \
-			for start in $$(seq 0 1000 $$count); do \
-				batch=$$(echo "$$delete_json" | jq -c ".[$$start:$$start+1000]"); \
-				batch_count=$$(echo "$$batch" | jq 'length'); \
-				if [ "$$batch_count" -gt 0 ]; then \
-					if [ "$(DRY_RUN)" = "1" ]; then \
-						echo "   [DRY RUN] would delete $$batch_count objects:"; \
-						echo "$$batch" | jq -r '.[].Key + " (" + .VersionId + ")"'; \
-					else \
-						echo "   deleting $$batch_count objects..."; \
-						echo "$$batch" | jq '{Objects: ., Quiet: false}' | \
-							aws s3api delete-objects --bucket $(S3_BUCKET) --delete file:///dev/stdin >/dev/null; \
-					fi; \
-				fi; \
-			done; \
-			[ "$(DRY_RUN)" = "1" ] && break; \
-		done; \
-		if [ "$(DRY_RUN)" = "1" ]; then \
-			echo "❎ DRY RUN complete. Bucket NOT deleted."; \
-		else \
-			echo "❌ Deleting bucket..."; \
-			aws s3api delete-bucket --bucket $(S3_BUCKET) --region $(AWS_REGION); \
-			echo "✅ Bucket $(S3_BUCKET) deleted."; \
-		fi; \
-	else \
-		echo "❎ Aborted."; \
-	fi
+	@S3_BUCKET="$(S3_BUCKET)" AWS_REGION="$(AWS_REGION)" FORCE="$(FORCE)" DRY_RUN="$(DRY_RUN)" /bin/bash ./scripts/nuke-tf-bucket.sh
 
 # Kubernetes Manifest Deployment Targets
 k8s-validate:
 	@echo "🔍 Validating Kubernetes manifests..."
-	@echo "--- Validating namespace ---"
-	kubectl apply --dry-run=client -f manifests/hello-world-ns.yaml
-	@echo "--- Validating deployment ---"
-	kubectl apply --dry-run=client -f manifests/hello-world-deployment.yaml
-	@echo "--- Validating service ---"
-	kubectl apply --dry-run=client -f manifests/hello-world-service.yaml
+	@kubectl apply --dry-run=client -k manifests/
 	@echo "✅ All manifests are valid."
 
 k8s-validate-server:
 	@echo "🔍 Validating manifests against cluster (server-side)..."
-	@echo "--- Validating namespace ---"
-	kubectl apply --dry-run=server -f manifests/hello-world-ns.yaml
-	@echo "--- Validating deployment ---"
-	kubectl apply --dry-run=server -f manifests/hello-world-deployment.yaml
-	@echo "--- Validating service ---"
-	kubectl apply --dry-run=server -f manifests/hello-world-service.yaml
+	@kubectl apply --dry-run=server -k manifests/
 	@echo "✅ All manifests are valid against cluster."
-
-k8s-apply-ns:
-	@echo "🚀 Creating namespace..."
-	kubectl apply -f manifests/hello-world-ns.yaml
-	@echo "✅ Namespace created."
 
 k8s-apply:
 	@echo "🚀 Deploying Kubernetes manifests with kustomize..."
 	kubectl apply -k manifests/
 	@echo "✅ Kubernetes resources deployed."
+
+k8s-install-metrics-server:
+	@echo "📦 Installing metrics-server..."
+	kubectl apply -k manifests/metrics-server/
+	@echo "✅ metrics-server install applied."
+	@echo "🔍 Verify with: kubectl get apiservices | grep metrics.k8s.io"
 
 k8s-delete:
 	@echo "⚠️  WARNING: This will delete all Kubernetes resources."
@@ -264,7 +210,7 @@ k8s-delete:
 		echo "🗑️  Deleting Kubernetes resources..."; \
 		kubectl delete -k manifests/ --timeout=300s --ignore-not-found=true; \
 		echo "⏳ Waiting for resources to be deleted..."; \
-		kubectl wait --for=delete namespace/"$(NAMESPACE)" --timeout=300s; \
+		kubectl wait --for=delete namespace hello-world-ns --timeout=300s; \
 		echo "✅ Kubernetes resources deleted."; \
 	else \
 		echo "❎ Aborted."; \
@@ -324,24 +270,11 @@ k8s-restart:
 	@echo "✅ Deployment restarted."
 
 # Kustomize-based deployment (alternative to direct kubectl apply)
-k8s-kustomize-validate:
-	@echo "🔍 Validating Kustomize configuration..."
-	kubectl apply --dry-run=client -k manifests/
-	@echo "✅ Kustomize configuration is valid."
-
-k8s-kustomize-apply:
-	@echo "🚀 Deploying with Kustomize..."
-	kubectl apply -k manifests/
-	@echo "✅ Kubernetes resources deployed via Kustomize."
-
-k8s-kustomize-delete:
-	@echo "🗑️  Deleting with Kustomize..."
-	kubectl delete -k manifests/ --ignore-not-found=true
-	@echo "✅ Kubernetes resources deleted via Kustomize."
-
 k8s-kustomize-diff:
 	@echo "🔍 Showing diff with Kustomize..."
 	kubectl diff -k manifests/ || true
+	@echo "✅ Diff complete."
+
 # Blue/Green Deployment Commands
 bg-deploy:
 	@echo "🔵🟢 Deploying Blue/Green infrastructure..."

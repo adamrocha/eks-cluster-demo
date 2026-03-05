@@ -6,7 +6,8 @@ resources:
   - hello-world-deployment-blue.yaml
   - hello-world-deployment-green.yaml
   - hello-world-service.yaml
-
+  - hello-world-hpa.yaml
+  - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 # Common annotations (labels removed to avoid selector immutability issues)
 commonAnnotations:
   documentation: See docs/blue-green-deployment.md
@@ -21,10 +22,9 @@ commonAnnotations:
 # For blue deployment
 replicas:
   - name: hello-world-blue
-    count: 3
+    count: 2
   - name: hello-world-green
-    count: 3
-
+    count: 2
 # Example: Add ConfigMap for application config
 # configMapGenerator:
 #   - name: app-config

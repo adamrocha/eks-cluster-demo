@@ -44,3 +44,6 @@ terraform.rc
 
 # Ignore Python virtual environment directory
 .venv/
+
+# Ignore Python bytecode cache directories
+__pycache__/

@@ -2,14 +2,14 @@
 
 [[package]]
 name = "ansible-core"
-version = "2.20.2"
+version = "2.20.3"
 description = "Radically simple IT automation"
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "ansible_core-2.20.2-py3-none-any.whl", hash = "sha256:1bbd101e3e3b1ace91d8be123007050f7efd94c4c78bbeb9e45ad1c7016d08ef"},
-    {file = "ansible_core-2.20.2.tar.gz", hash = "sha256:75e19a3ad8cf659579ea182cdf948ee0900d700e564802e92876de53dbd9715d"},
+    {file = "ansible_core-2.20.3-py3-none-any.whl", hash = "sha256:7fe2da953192cac5d5eb37bfc984bf9339daa252e0e3d1deb5526eb1f8be9f7f"},
+    {file = "ansible_core-2.20.3.tar.gz", hash = "sha256:38670ab2d2ffd67ee7e9e562f7c94e0927c8b7b4b0eb69233bc008c29e32d591"},
 ]
 
 [package.dependencies]
@@ -21,18 +21,18 @@ resolvelib = ">=0.8.0,<2.0.0"
 
 [[package]]
 name = "boto3"
-version = "1.42.54"
+version = "1.42.61"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "boto3-1.42.54-py3-none-any.whl", hash = "sha256:71194e855bfc81a21872cbe29c41f52ffdbe67e0a184a52c13346ef00b328939"},
-    {file = "boto3-1.42.54.tar.gz", hash = "sha256:fe3d8ec586c39a0c96327fd317c77ca601ec5f991e9ba7211cacae8db4c07a73"},
+    {file = "boto3-1.42.61-py3-none-any.whl", hash = "sha256:156efcc298a33206be6dfd220815c64aa8b09424017534cabe717636961fc306"},
+    {file = "boto3-1.42.61.tar.gz", hash = "sha256:117ebfc597c95bfb64c6d37ba77bd1c2a97a1885c1dcac2a8be1a14e2139a76d"},
 ]
 
 [package.dependencies]
-botocore = ">=1.42.54,<1.43.0"
+botocore = ">=1.42.61,<1.43.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.16.0,<0.17.0"
 
@@ -41,14 +41,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.42.54"
+version = "1.42.61"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "botocore-1.42.54-py3-none-any.whl", hash = "sha256:853a0822de66d060aeebafa07ca13a03799f7958313d1b29f8dc7e2e1be8f527"},
-    {file = "botocore-1.42.54.tar.gz", hash = "sha256:ab203d4e57d22913c8386a695d048e003b7508a8a4a7a46c9ddf4ebd67a20b69"},
+    {file = "botocore-1.42.61-py3-none-any.whl", hash = "sha256:476059beb3f462042742950cf195d26bc313461a77189c16e37e205b0a924b26"},
+    {file = "botocore-1.42.61.tar.gz", hash = "sha256:702d6011ace2b5b652a0dbb45053d4d9f79da2c5b184463042434e1754bdd601"},
 ]
 
 [package.dependencies]
@@ -548,5 +548,5 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [metadata]
 lock-version = "2.1"
-python-versions = "3.14.3"
-content-hash = "141fe8a541bc7099c9fa220205395c24913470f3be812a2c191dfebdd9751a14"
+python-versions = ">=3.12,<4.0"
+content-hash = "45eb84f4454e3068c2ec4029b6d6a874cba31a2aa85df40737a3628225fb1596"
