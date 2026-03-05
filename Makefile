@@ -31,6 +31,7 @@ help:
 	@echo "  make k8s-validate        - Validate manifests (client-side)"
 	@echo "  make k8s-validate-server - Validate against cluster (server-side)"
 	@echo "  make k8s-apply           - Deploy all manifests"
+	@echo "  make k8s-install-metrics-server - Install metrics-server for HPA CPU metrics"
 	@echo "  make k8s-status          - Check deployment status"
 	@echo "  make k8s-logs            - View application logs"
 	@echo "  make k8s-shell           - Open shell in running container"
@@ -195,6 +196,12 @@ k8s-apply:
 	@echo "🚀 Deploying Kubernetes manifests with kustomize..."
 	kubectl apply -k manifests/
 	@echo "✅ Kubernetes resources deployed."
+
+k8s-install-metrics-server:
+	@echo "📦 Installing metrics-server..."
+	kubectl apply -k manifests/metrics-server/
+	@echo "✅ metrics-server install applied."
+	@echo "🔍 Verify with: kubectl get apiservices | grep metrics.k8s.io"
 
 k8s-delete:
 	@echo "⚠️  WARNING: This will delete all Kubernetes resources."
