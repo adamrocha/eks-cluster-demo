@@ -34,6 +34,14 @@ resource "aws_eks_cluster" "eks" {
     "scheduler"
   ]
 
+  upgrade_policy {
+    support_type = "STANDARD"
+  }
+
+  kubernetes_network_config {
+    service_ipv4_cidr = "172.31.0.0/16"
+  }
+
   encryption_config {
     resources = ["secrets"]
     provider {
