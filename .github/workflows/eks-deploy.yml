@@ -24,6 +24,35 @@ env:
   PYTHON_VERSION: "3.11"
 
 jobs:
+  terraform-bootstrap:
+    if: github.event_name != 'delete'
+    name: Terraform Bootstrap
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS credentials
+        run: aws sts get-caller-identity > /dev/null
+
+      - name: Create Terraform state bucket (script)
+        run: /bin/bash ./scripts/setup-tfstate-bucket.sh
+
+      - name: Run Terraform bootstrap (Makefile)
+        run: make tf-bootstrap
+
   # # Build and push Docker image
   # build-and-push-image:
   #   if: github.event_name != 'delete'
@@ -82,6 +111,7 @@ jobs:
   provision-infrastructure:
     if: github.event_name != 'delete'
     name: Provision Infrastructure
+    needs: terraform-bootstrap
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
