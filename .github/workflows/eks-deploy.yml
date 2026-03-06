@@ -217,13 +217,17 @@ jobs:
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
 
+      - name: Validate Kubernetes metrics-server manifests (kustomize)
+        run: |
+          kubectl apply --dry-run=client -k manifests/metrics-server/
+
+      - name: Apply Kubernetes metrics-server manifests (kustomize)
+        run: |
+          kubectl apply -k manifests/metrics-server/
+
       - name: Validate Kubernetes manifests (kustomize)
         run: |
           kubectl apply --dry-run=client -k manifests/
-
-      - name: Apply Kubernetes manifests (kustomize)
-        run: |
-          kubectl apply -k metrics-server/manifests/
 
       - name: Apply Kubernetes manifests (kustomize)
         run: |
