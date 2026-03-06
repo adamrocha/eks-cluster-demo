@@ -13,14 +13,14 @@ echo "Checking S3 bucket: ${S3_BUCKET}"
 
 if aws s3api head-bucket --bucket "${S3_BUCKET}" --region "${AWS_REGION}" >/dev/null 2>&1; then
 	echo "Bucket '${S3_BUCKET}' already exists."
-	if [[ "${ENFORCE_SETTINGS}" != "1" ]]; then
+	if [[ ${ENFORCE_SETTINGS} != "1" ]]; then
 		echo "Skipping settings reconciliation (set ENFORCE_SETTINGS=1 to enforce)."
 		exit 0
 	fi
 	echo "ENFORCE_SETTINGS=1 set, reconciling bucket settings..."
 else
 	echo "Creating bucket '${S3_BUCKET}' in region '${AWS_REGION}'..."
-	if [[ "${AWS_REGION}" == "us-east-1" ]]; then
+	if [[ ${AWS_REGION} == "us-east-1" ]]; then
 		aws s3api create-bucket \
 			--bucket "${S3_BUCKET}" \
 			--region "${AWS_REGION}" >/dev/null
