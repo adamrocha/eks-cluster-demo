@@ -47,9 +47,6 @@ jobs:
       - name: Verify AWS credentials
         run: aws sts get-caller-identity > /dev/null
 
-      - name: Create Terraform state bucket (script)
-        run: /bin/bash ./scripts/setup-tfstate-bucket.sh
-
       - name: Run Terraform bootstrap (Makefile)
         run: make tf-bootstrap
 
