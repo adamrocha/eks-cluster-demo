@@ -1,198 +1,146 @@
 # Kubernetes Deployment Guide
 
-Deploy hello-world app to EKS using manifests in `manifests/`.
+Deploy and operate the `hello-world` workload on EKS using manifests under `manifests/`.
+
+## Design Overview
+
+- Namespace: `hello-world-ns`
+- Workload: `Deployment/hello-world`
+- Service: `Service/hello-world-service` (LoadBalancer)
+- Autoscaling: `hello-world-hpa.yaml`
+- Network controls: `hello-world-networkpolicy.yaml`
+- Metrics support: `manifests/metrics-server/`
 
 ## Prerequisites
 
-AWS CLI, kubectl (v1.28+), EKS cluster via Terraform, kubeconfig updated, Docker image in ECR
+- EKS cluster exists and is reachable
+- AWS credentials are configured
+- `kubectl` context points at target cluster
 
-## Configuration
+Set kubeconfig:
 
-**Image:** `802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.0.0` (nginx:alpine)  
-**Security:** Non-root (UID 10001), read-only root FS, dropped capabilities, no privilege escalation  
-**Ports:** HTTP 8080→80, HTTPS 8443→443 (self-signed TLS)  
-**Resources:** CPU 50m-100m, Memory 32Mi-64Mi  
-**Replicas:** 3 (rolling update)  
-**Health:** Liveness/readiness on `/` port 8080
+```sh
+aws eks update-kubeconfig --name eks-cluster-demo --region us-east-1
+kubectl get nodes
+```
 
-## Quick Start
+## Standard Operations
 
-### Using Makefile (Recommended)
+Validate manifests:
 
-```bash
-# Validate manifests before deploying
+```sh
 make k8s-validate
+```
 
-# Deploy all manifests
+Deploy manifests:
+
+```sh
 make k8s-apply
+```
 
-# Check deployment status
+Check status:
+
+```sh
 make k8s-status
+```
 
-# View logs
+View logs:
+
+```sh
 make k8s-logs
+```
 
-# Open shell in running container
-make k8s-shell
+Restart deployment:
 
-# Restart deployment
+```sh
 make k8s-restart
+```
 
-# Delete all resources
+Delete manifests:
+
+```sh
 make k8s-delete
 ```
 
-### Using kubectl Directly
+Preview diff before apply:
 
-```bash
-# Apply manifests in order
-kubectl apply -f manifests/hello-world-ns.yaml
-```bash
-# Validate & deploy
-make k8s-validate
-make k8s-apply
-
-# Check status & get LB URL
-make k8s-status
-
-# View logs, shell, restart
-make k8s-logs
-make k8s-shell
-make k8s-restart
-
-# Delete
-make k8s-delete
+```sh
+make k8s-kustomize-diff
 ```
 
-**Kustomize:** `make k8s-kustomize-{validate|apply|delete|diff}e image is built via Terraform. To deploy a new version:
+## Updating the Image
 
-```bash
-# Update image tag in terraform/variables.tf
-# Then rebuild and push
-make tf-apply
+Update image on running deployment:
 
-# Update manifest
-vi manifests/hello-world-deployment.yaml
-# Change image tag to match new version
-
-# Apply update
-kubectl apply -f manifests/hello-world-deployment.yaml
-
-# Or use kubectl set image
-kubUpdates & Rollback
-
-**Update image:**
-```bash
+```sh
 kubectl set image deployment/hello-world -n hello-world-ns \
-  hello-world=802645170184.dkr.ecr.us-east-1.amazonaws.com/hello-world-demo:1.3.3
-```
-
-**Rollback:**
-
-```bash
-make k8s-undo
-# Or: kubectl rollout undo deployment/hello-world -n hello-world-ns [--to-revision=2]
-
-Certificates are generated at container startup by `/usr/local/bin/entrypoint.sh`:
-
-```bash
-# Check if certificates exist
-kubectl exec -n hello-world-ns <pod-name> -- ls -la /etc/nginx/ssl/
-
-# View certificate details
-kubectl exec -n hello-world-ns <pod-name> -- \
-  openssl x509 -in /etc/nginx/ssl/nginx.crt -text -noout | grep -A2 "Subject:"
-
-# Check container logs for cert generation
-kubectl logs -n hello-world-ns <pod-name> | grep -i certificate
-```
-
-### Performance Issues
-
-```bash
-# Check resource usage
-kubectl top pods -n hello-world-ns
-
-# Check node resources
-kubectl top nodes
-
-# View resource limits
-kubectl describe deployment hello-world -n hello-world-ns | grep -A5 Limits
+  hello-world=<account>.dkr.ecr.<region>.amazonaws.com/hello-world-repo:<tag>
+kubectl rollout status deployment/hello-world -n hello-world-ns --timeout=300s
 ```
 
 ## Rollback
 
-### Undo Last Deployment
+Undo last rollout:
 
-```bash
-# Rollback to previous version
+```sh
 make k8s-undo
+```
 
-# Or directly
+Direct rollback command:
+
+```sh
 kubectl rollout undo deployment/hello-world -n hello-world-ns
 ```
 
-### Rollback to Specific Revision
+## Operational Checks
 
-```bash
-# View rollout history
-kubectl rollout history deployment/hello-world -n hello-world-ns
+Pods and health:
 
-# Rollback to specific revision
-kubectl rollout undo deployment/hello-world -n hello-world-ns --to-revision=2
+```sh
+kubectl get pods -n hello-world-ns
+kubectl describe deployment hello-world -n hello-world-ns
 ```
 
-## Best Practices
+Service and load balancer:
 
-1. **Always validate before applying** - Use `make k8s-validate-server`
-2. **Use image digests in production** - Pin to specific SHA256 digest
-3. **Monitor rollout status** - Watch for errors during deployment
-4. **Keep resource limits** - Prevent runaway resource usage
-5. **Use health checks** - Ensure containers are actually ready
-6. **Enable TLS** - Service supports both HTTP (80) and HTTPS (443)
-7. **Review security contexts** - Follow least-privilege principles
-8. **Version control manifests** - Track all changes in git
+```sh
+kubectl get svc -n hello-world-ns
+kubectl describe svc hello-world-service -n hello-world-ns
+```
 
-## GitOps Integration
+Recent warning events:
 
-For production environments, consider using GitOps tools:
-
-- **ArgoCD**: Automated sync from git to cluster
-- **Flux**: GitOps toolkit for Kubernetes
-- **Kustomize**: Environment-specific overlays
-
-## Next Steps
-
-1. ✅ Deploy basic application (this guide)
-2. Consider adding:
-   - ConfigMaps for configuration
-   - Secrets for sensitive data
-   - Ingress for HTTP routing
-   - HorizontalPodAutoscaler for auto-scaling
-   - PodDisruptionBudget for availability
-   - NetworkPolicy for traffic control
-   - ServiceMonitor for Prometheus metrics
-
-## References
-
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
-- [Kustomize](https://kustomize.io/)
-- [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+```sh
+kubectl get events -n hello-world-ns --field-selector type=Warning --sort-by=.lastTimestamp | tail -n 20
+```
 
 ## Troubleshooting
 
-**CrashLoopBackOff:** `kubectl describe pod <pod> -n hello-world-ns` → `kubectl logs <pod> -n hello-world-ns [--previous]`  
-**Image pull errors:** Check ECR image exists, verify node IAM permissions  
-**LB not provisioning:** `kubectl describe svc hello-world-service -n hello-world-ns`  
-**Cert issues:** Certs auto-generated by entrypoint.sh - check with `kubectl exec -n hello-world-ns <pod> -- ls -la /etc/nginx/ssl/`  
-**Performance:** `kubectl top pods -n hello-world-ns`
+CrashLoopBackOff:
 
-## Key Reminders
+```sh
+kubectl describe pod <pod-name> -n hello-world-ns
+kubectl logs <pod-name> -n hello-world-ns --previous
+```
 
-- Validate before applying (`make k8s-validate-server`)
-- Use image digests in production (pin SHA256)
-- Monitor rollout status, keep resource limits
-- Use health checks, enable TLS
-- Review security contexts (least-privilege)
-- Version control manifests
+Image pull errors:
+
+```sh
+aws ecr describe-images --repository-name hello-world-repo --region us-east-1
+kubectl describe pod <pod-name> -n hello-world-ns
+```
+
+Metrics/HPA not reporting:
+
+```sh
+kubectl get apiservices | grep metrics.k8s.io
+kubectl get pods -n kube-system | grep metrics-server
+```
+
+## Production Guidance
+
+- Validate before apply
+- Use immutable image tags per release
+- Watch rollout status for every deployment
+- Keep rollback command ready
+- Monitor latency/error rate during and after release
