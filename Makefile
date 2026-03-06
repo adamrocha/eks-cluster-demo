@@ -150,7 +150,7 @@ tf-plan:
 	terraform -chdir=$(TF_DIR) plan
 	@echo "✅ Terraform plan completed."
 
-tf-apply:
+tf-apply: tf-bootstrap
 	terraform -chdir=$(TF_DIR) apply
 	@echo "✅ Terraform resources deployed."
 
@@ -192,7 +192,7 @@ k8s-validate-server:
 	@kubectl apply --dry-run=server -k manifests/
 	@echo "✅ All manifests are valid against cluster."
 
-k8s-apply:
+k8s-apply: k8s-install-metrics-server
 	@echo "🚀 Deploying Kubernetes manifests with kustomize..."
 	kubectl apply -k manifests/
 	@echo "✅ Kubernetes resources deployed."

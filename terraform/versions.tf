@@ -1,18 +1,18 @@
 terraform {
-  required_version = ">= 1.13.0"
+  required_version = ">= 1.13"
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = "~> 6.35"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.38"
+      version = "~> 3.0"
     }
     helm = {
       source  = "hashicorp/helm"
-      version = "~> 3.0"
+      version = "~> 3.1"
     }
     http = {
       source  = "hashicorp/http"
@@ -24,7 +24,7 @@ terraform {
     }
     vault = {
       source  = "hashicorp/vault"
-      version = "~> 5.2"
+      version = "~> 5.7"
     }
     external = {
       source  = "hashicorp/external"
@@ -32,11 +32,11 @@ terraform {
     }
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 3.6"
     }
     tls = {
       source  = "hashicorp/tls"
-      version = "~> 4.0"
+      version = "~> 4.2"
     }
   }
 }
