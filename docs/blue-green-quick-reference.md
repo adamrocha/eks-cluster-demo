@@ -1,50 +1,58 @@
 # Blue/Green Quick Reference
 
-## Deploy New Version
-
-```bash
-# Edit green with new image
-vim manifests/blue-green/hello-world-deployment-green.yaml
-
-# Deploy & wait
-kubectl apply -f manifests/blue-green/hello-world-deployment-green.yaml
-kubectl rollout status deployment/hello-world-green -n hello-world-ns
-
-# Test locally
-kubectl port-forward -n hello-world-ns deployment/hello-world-green 8080:8080
-
-# Switch
-./scripts/blue-green-switch.sh green
-
-# Rollback if needed
-./scripts/blue-green-switch.sh rollback
-```
-
-## Commands
+## Core Commands
 
 | Action | Command |
-| ------ | ------- |
-| Status | `./scripts/blue-green-switch.sh status` |
-| Switch to blue/green | `./scripts/blue-green-switch.sh {blue\|green}` |
-| Rollback | `./scripts/blue-green-switch.sh rollback` |
-| View pods | `kubectl get pods -n hello-world-ns` |
-| Logs (blue/green) | `kubectl logs -n hello-world-ns -l version={blue\|green} -f` |
-| Current routing | `kubectl get svc hello-world-service -n hello-world-ns -o jsonpath='{.spec.selector.version}'` |
+| --- | --- |
+| Deploy blue/green resources | `make bg-deploy` |
+| Show blue/green status | `make bg-status` |
+| Switch to blue | `make bg-switch-blue` |
+| Switch to green | `make bg-switch-green` |
+| Roll back to previous | `make bg-rollback` |
+| Cleanup blue/green resources | `make bg-cleanup` |
 
-## Deployment Pattern Flow
+## Fast Path: Release New Green Version
 
-```text
-                    Current State: Blue Active
-   Pre-Switch Checklist
+```sh
+kubectl set image deployment/hello-world-green -n hello-world-ns \
+  hello-world=<account>.dkr.ecr.<region>.amazonaws.com/hello-world-repo:<tag>
+kubectl rollout status deployment/hello-world-green -n hello-world-ns --timeout=300s
+kubectl port-forward -n hello-world-ns deployment/hello-world-green 8080:8080
+make bg-switch-green
+```
 
-- [ ] Green deployment ready (all replicas running)
-- [ ] Health checks passing, no errors in logs
-- [ ] Smoke tests completed
-- [ ] DB migrations backward compatible
-- [ ] Monitoring/alerts configured
-- [ ] Rollback plan ready
+## Validate Routing
 
-## Troubleshooting
+```sh
+kubectl get svc hello-world-service -n hello-world-ns -o jsonpath='{.spec.selector.version}'
+kubectl get endpoints hello-world-service -n hello-world-ns
+```
 
-**Pods failing:** `kubectl describe pod -n hello-world-ns -l version=green | grep Events`  
-**Manual switch:** `kubectl patch svc hello-world-service -n hello-world-ns -p '{"spec":{"selector":{"version":"blue"}}}'
+## Rollback
+
+```sh
+make bg-rollback
+```
+
+Manual rollback (emergency):
+
+```sh
+kubectl patch service hello-world-service -n hello-world-ns \
+  -p '{"spec":{"selector":{"version":"blue"}}}'
+```
+
+## Quick Troubleshooting
+
+Green not ready:
+
+```sh
+kubectl describe pods -n hello-world-ns -l version=green
+kubectl get events -n hello-world-ns --sort-by=.lastTimestamp | tail -n 20
+```
+
+Unexpected errors after switch:
+
+```sh
+kubectl logs -n hello-world-ns -l version=green --tail=200
+make bg-rollback
+```
