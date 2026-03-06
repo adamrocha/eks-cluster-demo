@@ -187,7 +187,7 @@ resource "aws_iam_role_policy" "vpc_flow_log" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}"
+        Resource = aws_cloudwatch_log_group.vpc_flow_log.arn
       },
       {
         Effect = "Allow"
@@ -195,7 +195,7 @@ resource "aws_iam_role_policy" "vpc_flow_log" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}"
+        Resource = aws_cloudwatch_log_group.vpc_flow_log.arn
       }
     ]
   })
@@ -277,95 +277,3 @@ resource "aws_iam_role" "ec2_ssm_s3_role" {
     ]
   })
 }
-
-# resource "aws_iam_role_policy" "ec2_ssm_s3_inline" {
-#   name = "ssm-and-s3-access-policy"
-#   role = aws_iam_role.ec2_ssm_s3_role.id
-
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Sid    = "AllowSSMCoreActions"
-#         Effect = "Allow"
-#         Action = [
-#           "ssm:UpdateInstanceInformation",
-#           "ssm:ListAssociations",
-#           "ssm:ListInstanceAssociations"
-#         ]
-#         # Resource must be "*" - AWS does not support resource-level permissions for these SSM actions
-#         # Reference: https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssystemsmanager.html
-#         Resource = "*"
-#       },
-#       {
-#         Sid    = "AllowSSMSessionManager"
-#         Effect = "Allow"
-#         Action = [
-#           "ssmmessages:CreateControlChannel",
-#           "ssmmessages:CreateDataChannel",
-#           "ssmmessages:OpenControlChannel",
-#           "ssmmessages:OpenDataChannel"
-#         ]
-#         # Resource must be "*" - Required for SSM Session Manager
-#         # Reference: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html
-#         Resource = "*"
-#       },
-#       {
-#         Sid    = "AllowEC2Messages"
-#         Effect = "Allow"
-#         Action = [
-#           "ec2messages:AcknowledgeMessage",
-#           "ec2messages:DeleteMessage",
-#           "ec2messages:FailMessage",
-#           "ec2messages:GetEndpoint",
-#           "ec2messages:GetMessages",
-#           "ec2messages:SendReply"
-#         ]
-#         # Resource must be "*" - Required for SSM Agent communication
-#         # Reference: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
-#         Resource = "*"
-#       },
-#       {
-#         Sid    = "AllowS3Access"
-#         Effect = "Allow"
-#         Action = [
-#           "s3:GetObject",
-#           "s3:PutObject"
-#         ]
-#         Resource = "arn:aws:s3:::project-bucket-2727/ssm-logs/*"
-#       },
-#       {
-#         Sid    = "AllowS3ListBucket"
-#         Effect = "Allow"
-#         Action = [
-#           "s3:ListBucket"
-#         ]
-#         Resource = "arn:aws:s3:::project-bucket-2727"
-#         Condition = {
-#           StringLike = {
-#             "s3:prefix" = "ssm-logs/*"
-#           }
-#         }
-#       },
-#       {
-#         Sid    = "AllowCloudWatchLogsWrite"
-#         Effect = "Allow"
-#         Action = [
-#           "logs:CreateLogStream",
-#           "logs:PutLogEvents"
-#         ]
-#         # Scoped to specific log group and any log stream within it
-#         # Note: Log group /aws/ssm/session-logs should be pre-created via Terraform
-#         Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ssm/session-logs:*"
-#       },
-#       {
-#         Sid    = "AllowCloudWatchLogsRead"
-#         Effect = "Allow"
-#         Action = [
-#           "logs:DescribeLogStreams"
-#         ]
-#         Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ssm/session-logs"
-#       }
-#     ]
-#   })
-# }
