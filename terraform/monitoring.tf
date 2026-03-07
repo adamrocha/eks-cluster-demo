@@ -15,10 +15,11 @@ resource "helm_release" "prometheus" {
   version          = "81.5.0"
   namespace        = var.monitoring_ns
   create_namespace = true
-  timeout          = 900
+  timeout          = 1800
   skip_crds        = false
   wait             = true
-  replace          = true
+  wait_for_jobs    = false
+  replace          = false
 
   values = [
     yamlencode({
@@ -42,7 +43,6 @@ resource "helm_release" "prometheus" {
           storageSpec = {}
         }
       }
-      
       # Reduce Grafana resources
       grafana = {
         replicas = 1
@@ -56,17 +56,35 @@ resource "helm_release" "prometheus" {
             memory = "512Mi"
           }
         }
+        # Ensure sidecar containers also have resource requests so HPA CPU metrics are computable.
+        sidecar = {
+          resources = {
+            requests = {
+              cpu    = "50m"
+              memory = "64Mi"
+            }
+            limits = {
+              cpu    = "200m"
+              memory = "256Mi"
+            }
+          }
+        }
+        autoscaling = {
+          enabled      = true
+          minReplicas  = 1
+          maxReplicas  = 3
+          targetCPU    = 80
+          targetMemory = 80
+        }
         # Disable persistence to save resources
         persistence = {
           enabled = false
         }
       }
-      
       # Disable Alertmanager to save pod slots
       alertmanager = {
         enabled = false
       }
-      
       # Disable admission webhooks that can cause timeouts
       prometheusOperator = {
         admissionWebhooks = {
@@ -91,10 +109,16 @@ resource "helm_release" "prometheus" {
           }
         }
       }
-      
       # Keep kube-state-metrics but disable node-exporter (single node cluster)
       kubeStateMetrics = {
         enabled = true
+        autoscaling = {
+          enabled                           = true
+          minReplicas                       = 1
+          maxReplicas                       = 3
+          targetCPUUtilizationPercentage    = 80
+          targetMemoryUtilizationPercentage = 80
+        }
       }
       nodeExporter = {
         enabled = false
@@ -102,18 +126,3 @@ resource "helm_release" "prometheus" {
     })
   ]
 }
-
-# CloudWatch Log Group for SSM Session Manager logs
-# Required by ec2_ssm_s3_role policy which restricts logs:CreateLogStream to this specific group
-# resource "aws_cloudwatch_log_group" "ssm_session_logs" {
-#   name              = "/aws/ssm/session-logs"
-#   retention_in_days = 30
-
-#   kms_key_id = aws_kms_key.cloudwatch_logs.arn
-
-#   tags = {
-#     Name        = "SSM Session Logs"
-#     ManagedBy   = "Terraform"
-#     Environment = "production"
-#   }
-# }

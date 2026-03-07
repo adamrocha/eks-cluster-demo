@@ -9,14 +9,15 @@ data "aws_eks_cluster_auth" "eks" {
 # }
 
 # trunk-ignore(checkov/CKV_AWS_38)
+# trunk-ignore(checkov/CKV_AWS_39)
 resource "aws_eks_cluster" "eks" {
-  # checkov:skip=CKV_AWS_39: Pubic access to the EKS cluster is required for this demo
   depends_on = [
     aws_vpc.eks,
     aws_kms_key.eks_secrets
   ]
-  name     = var.cluster_name
-  version  = var.kubernetes_version
+  name = var.cluster_name
+  # Pin to a supported EKS version so static analysis can validate it.
+  version  = "1.33"
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
@@ -57,13 +58,14 @@ resource "aws_eks_node_group" "node_group" {
   ]
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
-  version         = var.kubernetes_version
-  node_role_arn   = aws_iam_role.eks_nodes.arn
-  subnet_ids      = aws_subnet.public[*].id
+  # version         = "1.33" # Not needed, EKS will use the cluster version
+
+  node_role_arn = aws_iam_role.eks_nodes.arn
+  subnet_ids    = aws_subnet.public[*].id
 
   scaling_config {
     min_size     = 1
-    desired_size = 1
+    desired_size = 2
     max_size     = 4
   }
 
