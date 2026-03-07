@@ -1,4 +1,13 @@
-provider "aws" {}
+provider "aws" {
+  default_tags {
+    tags = {
+      Project     = var.cluster_name
+      Environment = var.environment
+      ManagedBy   = "terraform"
+      Repository  = "eks-cluster-demo"
+    }
+  }
+}
 
 provider "kubernetes" {
   host  = aws_eks_cluster.eks.endpoint
