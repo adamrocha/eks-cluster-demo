@@ -7,54 +7,60 @@ resource "aws_s3_bucket" "project_bucket" {
 }
 
 resource "aws_s3_bucket" "project_bucket_replica" {
-  depends_on    = [aws_s3_bucket.project_bucket]
   bucket        = "project-bucket-2727-replica"
   force_destroy = true
+
   tags = {
     Name = "project-bucket-2727-replica"
   }
+
+  depends_on = [aws_s3_bucket.project_bucket]
 }
 
 resource "aws_s3_bucket_public_access_block" "project_bucket_public_access_block" {
-  depends_on              = [aws_s3_bucket.project_bucket]
   bucket                  = aws_s3_bucket.project_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+
+  depends_on = [aws_s3_bucket.project_bucket]
 }
 
 resource "aws_s3_bucket_public_access_block" "project_bucket_replica_public_access_block" {
-  depends_on              = [aws_s3_bucket.project_bucket_replica]
   bucket                  = aws_s3_bucket.project_bucket_replica.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+
+  depends_on = [aws_s3_bucket.project_bucket_replica]
 }
 
 resource "aws_s3_bucket_versioning" "project_bucket_versioning" {
-  depends_on = [
-    aws_s3_bucket.project_bucket,
-    aws_s3_bucket.project_bucket_replica
-  ]
   bucket = aws_s3_bucket.project_bucket.id
 
   versioning_configuration {
     status = "Enabled"
   }
-}
 
-resource "aws_s3_bucket_versioning" "project_bucket_replica_versioning" {
   depends_on = [
     aws_s3_bucket.project_bucket,
     aws_s3_bucket.project_bucket_replica
   ]
+}
+
+resource "aws_s3_bucket_versioning" "project_bucket_replica_versioning" {
   bucket = aws_s3_bucket.project_bucket_replica.id
 
   versioning_configuration {
     status = "Enabled"
   }
+
+  depends_on = [
+    aws_s3_bucket.project_bucket,
+    aws_s3_bucket.project_bucket_replica
+  ]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "project_bucket_encryption" {
@@ -192,10 +198,6 @@ resource "aws_s3_bucket_notification" "project_bucket_replica_notification" {
 }
 
 resource "aws_s3_bucket_replication_configuration" "project_bucket_replication" {
-  depends_on = [
-    aws_s3_bucket_versioning.project_bucket_versioning,
-    aws_s3_bucket_versioning.project_bucket_replica_versioning
-  ]
   bucket = aws_s3_bucket.project_bucket.id
   role   = aws_iam_role.s3_replication.arn
 
@@ -236,4 +238,9 @@ resource "aws_s3_bucket_replication_configuration" "project_bucket_replication" 
       # Add server-side encryption for the replica bucket if desired,
     }
   }
+
+  depends_on = [
+    aws_s3_bucket_versioning.project_bucket_versioning,
+    aws_s3_bucket_versioning.project_bucket_replica_versioning
+  ]
 }

@@ -83,11 +83,21 @@ resource "aws_subnet" "private" {
 }
 
 resource "aws_eip" "nat" {
+  # checkov:skip=CKV2_AWS_19: NAT Gateway EIP is intentionally allocated to a NAT gateway, not an EC2 instance.
   count  = 1
-  domain = "vpc" # Ensure EIP is for VPC
+  domain = "vpc"
 
   tags = {
     Name = "nat-eip-${count.index}"
+  }
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat[0].id
+  subnet_id     = aws_subnet.public[0].id
+
+  tags = {
+    Name = "nat-gateway"
   }
 }
 
@@ -115,15 +125,6 @@ resource "aws_route_table" "public" {
 
   tags = {
     Name = "eks-public-rt"
-  }
-}
-
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat[0].id
-  subnet_id     = aws_subnet.public[0].id
-
-  tags = {
-    Name = "nat-gateway"
   }
 }
 

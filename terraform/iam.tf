@@ -45,8 +45,8 @@ resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEC2ContainerRegistry
 }
 
 resource "aws_iam_role_policy_attachment" "eks_worker_node_policy_amazon_ssm_managed_instance_core" {
-  role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.eks_nodes.name
 }
 
 # Allow EKS nodes to manage load balancers (created by LoadBalancer services)

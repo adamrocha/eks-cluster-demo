@@ -10,6 +10,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "environment" {
+  description = "Environment name used for tagging"
+  default     = "dev"
+  type        = string
+}
+
 variable "node_group_name" {
   description = "Name of the EKS node group"
   default     = "eks-demo-node-group"
