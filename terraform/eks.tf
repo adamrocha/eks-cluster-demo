@@ -16,8 +16,7 @@ resource "aws_eks_cluster" "eks" {
     aws_kms_key.eks_secrets
   ]
   name = var.cluster_name
-  # Pin to a supported EKS version so static analysis can validate it.
-  # version  = "1.33" # Not needed, EKS will use the cluster version
+  # version  = "1.32"
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
@@ -58,7 +57,7 @@ resource "aws_eks_node_group" "node_group" {
   ]
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = var.node_group_name
-  # version         = "1.33" # Not needed, EKS will use the cluster version
+  # version         = "1.32"
 
   node_role_arn = aws_iam_role.eks_nodes.arn
   subnet_ids    = aws_subnet.public[*].id

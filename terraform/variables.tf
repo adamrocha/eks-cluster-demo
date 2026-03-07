@@ -54,14 +54,16 @@ variable "instance_type" {
   type    = string
 }
 
+# trunk-ignore(tflint/terraform_unused_declarations)
 variable "monitoring_ns" {
   description = "Name of the Kubernetes namespace"
   default     = "monitoring-ns"
   type        = string
 }
 
-# variable "vault_ns" {
-#   description = "Name of the Kubernetes namespace"
-#   default     = "vault-ns"
-#   type        = string
-# }
+# trunk-ignore(tflint/terraform_unused_declarations)
+variable "vault_ns" {
+  description = "Name of the Kubernetes namespace"
+  default     = "vault-ns"
+  type        = string
+}
