@@ -17,7 +17,7 @@ resource "aws_eks_cluster" "eks" {
   ]
   name = var.cluster_name
   # Pin to a supported EKS version so static analysis can validate it.
-  version  = "1.33"
+  # version  = "1.33" # Not needed, EKS will use the cluster version
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
