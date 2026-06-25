@@ -1,7 +1,7 @@
 FROM nginx:1.28.2-alpine-slim
 
 # Install dependencies, create directories, and set up non-root user
-RUN apk add --no-cache openssl=3.5.5-r0 && \
+RUN apk add --no-cache openssl=3.5.7-r0 && \
     mkdir -p /var/cache/nginx /var/run /run /etc/nginx/ssl && \
     addgroup -g10001 -S nginx-app && \
     adduser -S -D -H -u10001 -h /var/cache/nginx -s /sbin/nologin -G nginx-app -g nginx-app nginx-app

@@ -2,14 +2,14 @@
 
 ## Core Commands
 
-| Action | Command |
-| --- | --- |
-| Deploy blue/green resources | `make bg-deploy` |
-| Show blue/green status | `make bg-status` |
-| Switch to blue | `make bg-switch-blue` |
-| Switch to green | `make bg-switch-green` |
-| Roll back to previous | `make bg-rollback` |
-| Cleanup blue/green resources | `make bg-cleanup` |
+| Action                       | Command                |
+| ---------------------------- | ---------------------- |
+| Deploy blue/green resources  | `make bg-deploy`       |
+| Show blue/green status       | `make bg-status`       |
+| Switch to blue               | `make bg-switch-blue`  |
+| Switch to green              | `make bg-switch-green` |
+| Roll back to previous        | `make bg-rollback`     |
+| Cleanup blue/green resources | `make bg-cleanup`      |
 
 ## Fast Path: Release New Green Version
 

@@ -9,15 +9,15 @@ Canary is not implemented in this repository.
 
 ## Side-by-Side Comparison
 
-| Attribute | Rolling Update | Blue/Green |
-| --- | --- | --- |
-| Downtime | Zero (when healthy) | Zero |
-| Rollback speed | Medium | Fast |
-| Resource overhead during release | Low | High |
-| Pre-cutover validation | Limited | Full |
-| Operational complexity | Low | Medium |
-| Cost profile | Lower | Higher |
-| Best fit | Dev/test, low-risk changes | Production, high-confidence cutover |
+| Attribute                        | Rolling Update             | Blue/Green                          |
+| -------------------------------- | -------------------------- | ----------------------------------- |
+| Downtime                         | Zero (when healthy)        | Zero                                |
+| Rollback speed                   | Medium                     | Fast                                |
+| Resource overhead during release | Low                        | High                                |
+| Pre-cutover validation           | Limited                    | Full                                |
+| Operational complexity           | Low                        | Medium                              |
+| Cost profile                     | Lower                      | Higher                              |
+| Best fit                         | Dev/test, low-risk changes | Production, high-confidence cutover |
 
 ## Rolling Update
 
