@@ -32,7 +32,7 @@ while true; do
 
 	echo "   found ${count} objects..."
 	for start in $(seq 0 1000 "${count}"); do
-		batch=$(echo "${delete_json}" | jq -c ".[$start:$start+1000]")
+		batch=$(echo "${delete_json}" | jq -c ".[${start}:${start}+1000]")
 		batch_count=$(echo "${batch}" | jq 'length')
 
 		if [[ ${batch_count} -gt 0 ]]; then
